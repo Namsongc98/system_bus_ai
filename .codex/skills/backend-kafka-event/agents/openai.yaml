@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Kafka Event"
+  short_description: "Implement and review Spring Kafka event flows"
+  default_prompt: "Use $backend-kafka-event to implement or change a Kafka producer, consumer, or event contract safely."
