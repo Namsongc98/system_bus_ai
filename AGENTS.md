@@ -36,6 +36,8 @@ Before working in a subproject:
   `.codex/skills/codex-git-worktree/scripts/worktree_flow.py`.
 - Always show the preview and wait for explicit approval of its current token
   before creating or removing a worktree.
+- Each Codex task worktree must contain a common `system_bus_ai` worktree and
+  exactly one nested backend or frontend worktree using the same branch slug.
 - Do not run force worktree removal or direct branch deletion for Codex
   worktrees.
 
