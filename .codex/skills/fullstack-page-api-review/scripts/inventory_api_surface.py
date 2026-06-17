@@ -23,6 +23,7 @@ SERVICE_CALL = re.compile(
     r"\(\s*(API_ENDPOINTS\.[A-Z0-9_.]+)"
 )
 LOCAL_IMPORT = re.compile(r"from\s+['\"]@/([^'\"]+)['\"]")
+RELATIVE_IMPORT = re.compile(r"from\s+['\"](\.{1,2}/[^'\"]+)['\"]")
 PAGE_EVIDENCE = re.compile(
     r"@/services/|@/stores/|\b(?:trip|bus|route|user|ticket|booking|payment|revenue)"
     r"(?:Service|Store)\.[A-Za-z_][A-Za-z0-9_]*\s*\("
@@ -46,9 +47,15 @@ def resolve_root(candidate: Optional[Path]) -> Path:
     raise SystemExit("Could not resolve System_bus root. Pass --root explicitly.")
 
 
-def resolve_frontend_import(src_dir: Path, import_path: str) -> Optional[Path]:
-    base = src_dir / import_path
-    candidates = [base, base.with_suffix(".js"), base.with_suffix(".vue"), base / "index.js"]
+def resolve_frontend_import(base_dir: Path, import_path: str) -> Optional[Path]:
+    base = base_dir / import_path
+    candidates = [
+        base,
+        base.with_suffix(".js"),
+        base.with_suffix(".vue"),
+        base / "index.js",
+        base / "index.vue",
+    ]
     return next((path for path in candidates if path.is_file()), None)
 
 
@@ -58,6 +65,8 @@ def page_dependency_evidence(
     if not page_value:
         return []
 
+    root = root.resolve()
+    frontend = frontend.resolve()
     page = Path(page_value)
     if not page.is_absolute():
         page = root / page
@@ -90,6 +99,11 @@ def page_dependency_evidence(
 
             for import_path in LOCAL_IMPORT.findall(line):
                 dependency = resolve_frontend_import(src_dir, import_path)
+                if dependency and dependency.resolve() not in visited:
+                    pending.append(dependency.resolve())
+
+            for import_path in RELATIVE_IMPORT.findall(line):
+                dependency = resolve_frontend_import(path.parent, import_path)
                 if dependency and dependency.resolve() not in visited:
                     pending.append(dependency.resolve())
 
