@@ -37,7 +37,7 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] implement
 - [x] test
 - [x] review
-- [ ] lead-review
+- [x] lead-review
 
 ## 0.6 — GET /api/auth/me
 - [ ] spec
