@@ -172,7 +172,7 @@ cho qua mọi JWT hợp lệ khi không có `@RoleRequired`.
 - NEEDS-USER: L14 — S9 live chưa chạy (restart backend trên nhánh 0.5 rồi chạy, hoặc chấp nhận test in-process).
 
 ### Commit
-Committed 2026-09-23, local only (not pushed yet — `plan-push`).
+Committed and pushed 2026-09-23.
 1. `booking_ticket_vue` — no files for 0.5: FE tests and commit skipped.
 2. `ticket-system` — BE tests `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket,booking_ticket -am test`
    → `common-library` 1/1 + `manage-revenue-ticket` 48/48, BUILD SUCCESS. Branch
@@ -188,3 +188,6 @@ Committed 2026-09-23, local only (not pushed yet — `plan-push`).
    trắng). Test `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket,booking_ticket -am clean test`
    → 1/1 + 61/61, BUILD SUCCESS. `ticket-system` `develop` fast-forward tới `6b2d8d5`, đã push.
    Root `develop` fast-forward tới nhánh 0.5 của root, đã push.
+5. Root docs sau lead review: `c750769` (đồng bộ plan/review/report 0.4↔0.5), `6f57b74`
+   (đính chính: develop đã có PR #2; ghi nhận merge `6b2d8d5`), `90af704` (bạn tick `lead-review`
+   0.5 trong ledger). Root `develop` đã push.
