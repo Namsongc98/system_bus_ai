@@ -78,6 +78,9 @@ First run was blocked at the gate by pre-existing staged entries in `ticket-syst
   sớm của 0.5 (RevenueController 9 method, chưa có L4/L12) và work không thuộc 0.4/0.5
   (admin dashboard, Flyway V1, Kong/TLS/k8s/CI, bản viết lại `AuthInterceptor`). **Không merge
   nguyên nhánh 0.4 sau 0.5** — xem kế hoạch xử lý ở mục 0.5.
+- **Đính chính:** nhánh 0.4 (kể cả `10b0bde`) **đã được merge vào `develop` qua PR #2**
+  (`308e7c9`, 2026-09-22) trước khi làm 0.5; ghi chú "không merge" ở trên dựa trên `develop` cục
+  bộ chưa fetch. Chồng lấn với 0.5 đã giải ở merge `6b2d8d5` (xem mục 0.5).
 - Dấu tick `lead-review` của 0.4 trong ledger nằm ở commit root của 0.5 (`d63eaef`), không có
   trên nhánh 0.4.
 
@@ -95,8 +98,8 @@ Date: 2026-09-23 · Lead review: round 2, CLEAN · Review doc: `.claude/docs/rev
 - S2 `BusController` `@RoleRequired(ADMIN)` class + 3 method — done.
 - S3 `RouteController` class + 2 method — done.
 - S4 `TripController` class + 4 method, bỏ field `@Autowired` thừa — done.
-- S5 `RevenueController` class + method — done trên bản `develop` (**5 method**, không phải 9 như spec
-  đếm: 4 endpoint báo cáo doanh thu nằm ở work khác, không có trên `develop`).
+- S5 `RevenueController` class + method — done. Commit `62b44cf` có 5 method (nhánh tạo từ `99bab9c`);
+  sau merge `origin/develop` (`6b2d8d5`) đủ 9 method, đều `@RoleRequired(ADMIN)`.
 - S6 `TicketController` 3 method — done (đã nằm trong commit 0.4 `99bab9c`).
 - S7 `AuthServiceTest`, S8 `RoleRequiredCoverageTest` — done.
 - S9 verify thủ công — **chưa chạy** (L14): backend đang chạy là code trước 0.5; test in-process thay thế.
@@ -118,7 +121,7 @@ Date: 2026-09-23 · Lead review: round 2, CLEAN · Review doc: `.claude/docs/rev
 | POST/PUT | `/api/loyalty/rewards`, `/{id}` | ADMIN | L12 |
 | GET | `/api/test-redis/ping` | ADMIN | L12 |
 
-So với `develop` cũ: interceptor cũ trả 403 cho **mọi** user ở endpoint không có `@RoleRequired`, nên
+So với commit `99bab9c`: interceptor cũ trả 403 cho **mọi** user ở endpoint không có `@RoleRequired`, nên
 các endpoint trên trước đây không ai gọi được (kể cả ADMIN); interceptor mới (carry từ `10b0bde`)
 cho qua mọi JWT hợp lệ khi không có `@RoleRequired`.
 
@@ -179,3 +182,9 @@ Committed 2026-09-23, local only (not pushed yet — `plan-push`).
    carried from `10b0bde`).
 3. Root repo — branch `task/0.5-register-role-required` (from `task/0.4-lock-public-endpoints`,
    stacked on the 0.4 docs commit `e4033e0`), no tests; hash in chat.
+4. **Merge vào develop (2026-09-23):** `origin/develop` đã có nhánh 0.4 qua PR #2 (`308e7c9`, gồm
+   `10b0bde`). Merge nó vào `task/0.5-register-role-required` → `6b2d8d5` (conflict: `AuthService`,
+   `BusControllerAuthTest`, `RoleRequiredCoverageTest` lấy phía 0.5; `pom.xml` chỉ khác khoảng
+   trắng). Test `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket,booking_ticket -am clean test`
+   → 1/1 + 61/61, BUILD SUCCESS. `ticket-system` `develop` fast-forward tới `6b2d8d5`, đã push.
+   Root `develop` fast-forward tới nhánh 0.5 của root, đã push.
