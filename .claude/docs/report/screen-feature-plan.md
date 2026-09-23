@@ -71,3 +71,102 @@ Committed 2026-09-22, local only (not pushed).
 
 First run was blocked at the gate by pre-existing staged entries in `ticket-system`
 (`.env.example` deletion, `booking_ticket/.gitignore`); both were unstaged, files unchanged.
+
+## 0.5 — Chặn tự đăng ký ADMIN (B11) + gắn `@RoleRequired` (B12)
+
+Date: 2026-09-23 · Lead review: round 2, CLEAN · Review doc: `.claude/docs/review/0.5-register-role-required.md`
+
+### Kết quả
+- DoD (plan): Register với `role=ADMIN` → tài khoản vẫn là CUSTOMER; CUSTOMER gọi `POST /api/bus` → 403
+  → **đạt**. Chứng minh bởi `AuthControllerTest.registerWithAdminRoleInBodyIssuesCustomerToken`
+  (201, role lưu là CUSTOMER, JWT access + refresh đều CUSTOMER) và
+  `BusControllerAuthTest.rejectsCustomerTokenOnBusCreation` (403) + `allowsAdminTokenOnBusCreation` (200).
+  Cả hai chạy qua `AuthInterceptor` thật.
+- S1 `AuthService.register` luôn CUSTOMER, constructor injection — done.
+- S2 `BusController` `@RoleRequired(ADMIN)` class + 3 method — done.
+- S3 `RouteController` class + 2 method — done.
+- S4 `TripController` class + 4 method, bỏ field `@Autowired` thừa — done.
+- S5 `RevenueController` class + method — done trên bản `develop` (**5 method**, không phải 9 như spec
+  đếm: 4 endpoint báo cáo doanh thu nằm ở work khác, không có trên `develop`).
+- S6 `TicketController` 3 method — done (đã nằm trong commit 0.4 `99bab9c`).
+- S7 `AuthServiceTest`, S8 `RoleRequiredCoverageTest` — done.
+- S9 verify thủ công — **chưa chạy** (L14): backend đang chạy là code trước 0.5; test in-process thay thế.
+- Ngoài scope gốc, theo quyết định của bạn: L4 (`update-password` lấy tài khoản từ JWT) và L12
+  (khoá ADMIN cho Salary / BaseSalary / BaseLoyalty / LoyaltyReward / RedisTest).
+
+### Endpoint thay đổi
+| Method | Path | Auth | Change |
+|---|---|---|---|
+| POST | `/api/auth/register` | public | `role` trong body bị bỏ qua, luôn tạo CUSTOMER |
+| PUT | `/api/auth/update-password` | mọi role đã đăng nhập | Tài khoản lấy từ JWT (`id`), không từ `email` trong body; body chỉ còn `oldPassword`, `password` (validated); sai mật khẩu cũ → 400 (trước 500); thành công → 200 (trước 201) |
+| GET/POST/PUT | `/api/bus`, `/api/bus/{busId}` | ADMIN | Trước: bất kỳ JWT hợp lệ (theo interceptor mới) |
+| POST/PUT | `/api/route`, `/api/route/{routeId}` | ADMIN | như trên |
+| POST/GET/PUT | `/api/trip`, `/api/trip/scheduled`, `/api/trip/{tripId}`, `/api/trip/{tripId}/revenue` | ADMIN | như trên |
+| GET | `/api/revenue/bus`, `/employee`, `/user`, `/bus/{busId}/range`, `/bus/all` | ADMIN | như trên |
+| POST/GET | `/api/salary`, `/api/salary/driver` | ADMIN | L12 — trước (trên nhánh này): mọi JWT hợp lệ |
+| POST/PUT/GET | `/api/base_salary`, `/api/base_salary/{id}` | ADMIN | L12 |
+| POST/PUT | `/api/base_loyalty_point`, `/{id}` | ADMIN | L12 |
+| POST/PUT | `/api/loyalty/rewards`, `/{id}` | ADMIN | L12 |
+| GET | `/api/test-redis/ping` | ADMIN | L12 |
+
+So với `develop` cũ: interceptor cũ trả 403 cho **mọi** user ở endpoint không có `@RoleRequired`, nên
+các endpoint trên trước đây không ai gọi được (kể cả ADMIN); interceptor mới (carry từ `10b0bde`)
+cho qua mọi JWT hợp lệ khi không có `@RoleRequired`.
+
+### File thay đổi
+**ticket-system** (branch at report time: `task/0.5-register-role-required`, từ `develop` = `99bab9c`)
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/service/AuthService.java` — S1, L4
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/AuthController.java` — L4, constructor injection, bỏ `UserService` không dùng
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/Dto/request/UserUpdatePasswordRequestDto.java` — L4
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/BusController.java` — S2
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/RouteController.java` — S3
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/TripController.java` — S4
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/RevenueController.java` — S5
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/SalaryController.java` — L12
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/BaseSalaryController.java` — L12
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/BaseLoyaltyPointsController.java` — L12
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/LoyaltyRewardController.java` — L12
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/controller/RedisTestController.java` — L12
+- `manage-revenue-ticket/src/main/java/com/ticket_system/manage_revenue_ticket/interceptor/AuthInterceptor.java` — L11 [mixed — whole change is earlier uncommitted work carried from `10b0bde` (0.4 prerequisite): class-level `@RoleRequired`, no-annotation endpoints need only a valid JWT, constructor injection]
+- `common-library/src/main/java/com/ticket_system/common/exception/GlobalExceptionHandler.java` — L11 [mixed — 0.4 prerequisite from `10b0bde`: `@RestControllerAdvice`]
+- `manage-revenue-ticket/pom.xml` — L11 [mixed — 0.4 prerequisite: Testcontainers test dependencies + version]
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/service/AuthServiceTest.java` — S7 (new)
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/controller/RoleRequiredCoverageTest.java` — S8, L12 (new)
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/controller/BusControllerAuthTest.java` — L2 (new)
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/controller/AuthControllerTest.java` — L2, L4 (new)
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/controller/SalaryControllerAuthTest.java` — L12 (new)
+- `manage-revenue-ticket/src/test/java/com/ticket_system/manage_revenue_ticket/interceptor/AuthInterceptorTest.java` — L11 (new) [mixed — test of the carried `AuthInterceptor` rewrite, earlier work]
+- `manage-revenue-ticket/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` — L11 (new) [mixed — 0.4 prerequisite]
+
+**Root repo** (branch at report time: `task/0.5-register-role-required`, từ `task/0.4-lock-public-endpoints`)
+- `.claude/docs/report/screen-feature-plan.md` — this section
+- `.claude/docs/review/0.5-register-role-required.md` — spec review + lead review of 0.5 (new)
+- `.claude/ledger/screen-feature-plan.md` — [mixed — only change is your 0.4 `lead-review` tick; 0.5 lines were already committed in `e4033e0`]
+
+**booking_ticket_vue** — no files (0.5 is BE only; FE `updatePassword` payload still accepted — extra `email` is ignored).
+
+### Test
+- `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket -am clean test` → **49/49, BUILD SUCCESS** (lead review round 2).
+- `mvn -f ticket-system/pom.xml -pl booking_ticket -am test-compile` → OK; `mvn -f ticket-system/pom.xml install -DskipTests` → OK.
+
+### Review
+- Lead review 1 (trên bản copy `10b0bde`) → OPEN: chưa có review độc lập (L1), S9 thay thế chưa đủ (L2), 0.5 không có commit riêng (L3), lỗi ownership `update-password` (L4).
+- L1: `security-reviewer`, `backend-reviewer`, `test-gap-reviewer` độc lập — S1–S6 đúng scope.
+- Fix round 1: nhánh mới từ `develop`; `develop` không compile được test → carry prerequisite (L11); L2, L4 fixed; `security-reviewer` tìm ra L12.
+- L12 (quyết định a) fixed; `security-reviewer` xác nhận. Lead review 2 → CLEAN.
+
+### Còn lại
+- DEFER: L5 → task 1.1 / 3.2 (chain test cho từng controller admin) · L6 → task 4.3 · L7 → B19 · L8 → B19 · L9 → B18 · L10 → B7 · L13 → task 4.3 (`LoyaltyPointsController`, `createTicketByLoyalty`: role + ownership check).
+- NEEDS-USER: L14 — S9 live chưa chạy (restart backend trên nhánh 0.5 rồi chạy, hoặc chấp nhận test in-process).
+
+### Commit
+Committed 2026-09-23, local only (not pushed yet — `plan-push`).
+1. `booking_ticket_vue` — no files for 0.5: FE tests and commit skipped.
+2. `ticket-system` — BE tests `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket,booking_ticket -am test`
+   → `common-library` 1/1 + `manage-revenue-ticket` 48/48, BUILD SUCCESS. Branch
+   `task/0.5-register-role-required` (from `develop` = `99bab9c`, i.e. stacked on the 0.4 commit),
+   commit `62b44cf`, 22 files. Mixed: `AuthInterceptor.java`, `AuthInterceptorTest.java`,
+   `GlobalExceptionHandler.java`, `manage-revenue-ticket/pom.xml`, `MockMaker` (0.4 prerequisites
+   carried from `10b0bde`).
+3. Root repo — branch `task/0.5-register-role-required` (from `task/0.4-lock-public-endpoints`,
+   stacked on the 0.4 docs commit `e4033e0`), no tests; hash in chat.

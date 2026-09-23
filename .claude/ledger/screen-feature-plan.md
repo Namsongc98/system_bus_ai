@@ -30,7 +30,7 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] implement
 - [x] test
 - [x] review
-- [ ] lead-review
+- [x] lead-review
 
 ## 0.5 — Register CUSTOMER only + @RoleRequired (B11, B12)
 - [x] spec
