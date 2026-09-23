@@ -27,8 +27,8 @@ Plan push for:
 ## Claude Instructions
 
 ### 1. Gate
-- The report `.claude/docs/report/<plan-file-name>.md` has a `## <ID> — …`
-  section whose `### Commit` lists the commits `plan-commit` made. No commits
+- The task report `.claude/docs/report/<ID>-<slug>.md` (same `<ID>-<slug>` as
+  the review doc) has a `## Commit` section listing the commits `plan-commit` made. No commits
   recorded (blocked, test failure, pending) → stop: point to `/plan-commit <ID>`.
 - Repos to push = the repos with a commit for this task, in order
   `booking_ticket_vue` → `ticket-system` → `.`. A repo recorded as "no files" is

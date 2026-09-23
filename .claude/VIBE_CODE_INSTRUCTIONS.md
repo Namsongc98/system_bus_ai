@@ -72,8 +72,9 @@ rồi mới sửa code — không để 2 bên lệch nhau.
         |-- OPEN (còn FIX) --> /plan-task <ID> (tự vào fix mode, skill lead-review-fix)
         |                      --> /lead-review <ID> lại ... tối đa 3 vòng, rồi dừng hỏi bạn
         |
-        |-- CLEAN (hết FIX) --> skill plan-report: .claude/docs/report/<tên-file-plan>.md
-        |                       (1 file / plan, 1 mục / task)
+        |-- CLEAN (hết FIX) --> skill plan-report: .claude/docs/report/<ID>-<slug>.md
+        |                       (1 file / task) + 1 dòng mục lục trong
+        |                       .claude/docs/report/<tên-file-plan>.md
         |                   --> skill plan-commit: 3 commit, nhánh task/<ID>-<slug>, message
         |                       lấy từ plan:
         |                       1. booking_ticket_vue (test FE đỏ = dừng)
@@ -190,7 +191,7 @@ Claude), liệt kê theo phạm vi:
 | `/git-worktree` | Xem trước và áp dụng 1 thao tác Git worktree kiểu review-first. |
 | `/integrate-component` | Ghép 1 trang Vue từ HTML Figma bằng các component tái sử dụng có sẵn. |
 | `/lead-review` | Tổng hợp kết quả review + trạng thái ledger, ghi lỗi còn lại vào mục `7. Lead review` của doc `.claude/docs/review/<ID>-<slug>.md` với verdict `OPEN`/`CLEAN`; `CLEAN` mới xin bạn xác nhận. Không sửa code. |
-| `/plan-report` | Viết mục report của 1 task (sau lead-review CLEAN) vào `.claude/docs/report/<tên-file-plan>.md`, rồi chạy `plan-commit`. Thường tự chạy từ `/lead-review`. |
+| `/plan-report` | Viết file report riêng của 1 task (sau lead-review CLEAN) `.claude/docs/report/<ID>-<slug>.md` và thêm 1 dòng vào mục lục `.claude/docs/report/<tên-file-plan>.md`, rồi chạy `plan-commit`. Thường tự chạy từ `/lead-review`. |
 | `/plan-commit` | 3 commit theo thứ tự: `booking_ticket_vue` (test FE xanh mới commit) → `ticket-system` (test BE xanh mới commit) → repo gốc (docs, không test). Chỉ commit đúng các file report liệt kê, nhánh `task/<ID>-<slug>`, message lấy từ plan. Xong thì chạy `plan-push`. |
 | `/plan-push` | Push các nhánh `task/<ID>-<slug>` của 1 task lên `origin` (FE → BE → repo gốc), chỉ đúng tên nhánh, không force, không tạo PR; trả link compare để mở PR. Thường tự chạy sau `plan-commit`. |
 | `/lead-review-fix` | Sửa các lỗi `FIX` mà `/lead-review` ghi lại, verify + review lại, rồi trả về `/lead-review`. Thường không cần gõ: `/plan-task <ID>` tự chuyển sang bước này khi còn lỗi mở. |
@@ -228,7 +229,7 @@ Các workflow đóng gói sẵn mà Claude tự khớp với task qua phần `de
 | `fullstack-page-api-review` | Bảng đối chiếu FE-BE + kế hoạch chuẩn bị backend cho các API của 1 trang. |
 | `git-worktree` | Xem trước/tạo/liệt kê/dọn dẹp 1 Git worktree độc lập. |
 | `plan-task` | Thực thi 1 task ID của `screen-feature-plan.md` theo fix scope đã duyệt; dừng nếu `spec` chưa tick. Chạy lại khi `/lead-review` còn lỗi `FIX` → tự vào fix mode (`lead-review-fix`). |
-| `plan-report` | Giống `/plan-report` — 1 file report cho mỗi plan, mỗi task 1 mục, danh sách file thay đổi theo từng repo (đánh dấu file `mixed`). |
+| `plan-report` | Giống `/plan-report` — 1 file report cho mỗi task (`<ID>-<slug>.md`, trùng tên review doc) + file mục lục theo plan; danh sách file thay đổi theo từng repo (đánh dấu file `mixed`). |
 | `plan-commit` | Giống `/plan-commit` — FE (test rồi commit) → BE (test rồi commit) → repo gốc (commit, không test), rồi gọi `plan-push`. |
 | `plan-push` | Giống `/plan-push` — push nhánh task lên origin, dừng nếu remote đã lệch, không bao giờ force. |
 | `lead-review-fix` | Giống `/lead-review-fix` — sửa đúng các lỗi `FIX` trong mục `7. Lead review` của `<ID>-<slug>.md`, `DEFER` thành blocker `B<n>`, `NEEDS-USER` để bạn quyết. |
@@ -317,7 +318,8 @@ không bao giờ tự đánh dấu 1 work-unit là xong thay bạn.
    - Verdict `OPEN` (còn lỗi `FIX`) → `/plan-task 1.1` lần nữa (tự vào fix mode,
      chỉ sửa các lỗi `FIX`) → `/lead-review 1.1` lại. Tối đa 3 vòng; quá thì Claude
      dừng và hỏi bạn.
-   - Verdict `CLEAN` → Claude tự viết mục `1.1` vào
+   - Verdict `CLEAN` → Claude tự viết file report
+     `.claude/docs/report/1.1-admin-buses-routes.md` và thêm dòng `1.1` vào mục lục
      `.claude/docs/report/screen-feature-plan.md`, rồi commit lên nhánh
      `task/1.1-admin-buses-routes`: `booking_ticket_vue` (sau test FE) → `ticket-system`
      (sau test BE) → repo gốc (không test); repo không có file thì bỏ qua. Sau đó push

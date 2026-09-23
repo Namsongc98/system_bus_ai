@@ -1,6 +1,6 @@
 ---
 name: plan-report
-description: Write the report entry for one screen-feature-plan task after /lead-review returned CLEAN — one report file per plan in .claude/docs/report/, one section per task — then hand over to plan-commit. Use when a lead review is CLEAN, when the user asks for a task report, or invokes /plan-report.
+description: Write the report for one screen-feature-plan task after /lead-review returned CLEAN — one report file per task (.claude/docs/report/<ID>-<slug>.md) plus a row in the plan's index file (.claude/docs/report/<plan-file-name>.md) — then hand over to plan-commit. Use when a lead review is CLEAN, when the user asks for a task report, or invokes /plan-report.
 argument-hint: "<task ID from .claude/docs/plan/screen-feature-plan.md, e.g. 0.4, 1.1>"
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Skill
 ---
@@ -11,12 +11,18 @@ Also callable as `/plan-report` (`.claude/commands/plan-report.md`). `/lead-revi
 runs it automatically when its verdict is `CLEAN`.
 
 ```
-/lead-review <ID> --CLEAN--> plan-report --> plan-commit --> plan-push --> user ticks `lead-review`
+/lead-review <ID> --CLEAN--> plan-report
+                               1. write .claude/docs/report/<ID>-<slug>.md   (task report)
+                               2. update .claude/docs/report/<plan-file-name>.md (index row)
+                         --> plan-commit --> plan-push --> user ticks `lead-review`
 ```
 
-One report file per plan, named after the plan file:
-`.claude/docs/plan/screen-feature-plan.md` → `.claude/docs/report/screen-feature-plan.md`.
-Each task is one `## <ID> — <task name>` section in that file.
+Two outputs, both in `.claude/docs/report/`:
+
+| File | Content |
+|---|---|
+| `<ID>-<slug>.md` — same name as the task's review doc `.claude/docs/review/<ID>-<slug>.md` | The full report of one task. `plan-commit` and `plan-push` read it. |
+| `<plan-file-name>.md` — `.claude/docs/plan/screen-feature-plan.md` → `screen-feature-plan.md` | Index only: one table row per reported task, linking to its task file. |
 
 ## Request Template
 
@@ -29,6 +35,8 @@ Plan report for:
 - The task's review doc `.claude/docs/review/<ID>-<slug>.md` must have a
   `## 7. Lead review` section whose current verdict is `CLEAN`. Otherwise stop:
   point to `/lead-review <ID>` (or `/plan-task <ID>` if it is `OPEN`).
+- `<slug>` is taken from that review doc's file name; the task report file uses
+  the same `<ID>-<slug>`.
 
 ### 2. Collect facts — never invent
 Read, do not guess:
@@ -43,8 +51,9 @@ Read, do not guess:
 ### 3. Build the changed-file list (used by `plan-commit` to stage)
 - Start from every file the review doc names as changed or added for this task
   (fix scope, lead-review evidence, tests), plus the task's own docs in the root
-  repo: this report file, the review doc, the ledger, the plan (if the task
-  edited it).
+  repo: the task report file `<ID>-<slug>.md`, the index `<plan-file-name>.md`,
+  the review doc, the ledger, the plan (if the task edited it). The two report
+  files are always listed for the root repo.
 - Keep only paths that are actually uncommitted in `git status`. List them per
   repo with repo-relative paths. Never list `.env*`, secrets, `target/`,
   `node_modules/`, `dist/`, or runtime data.
@@ -55,47 +64,65 @@ Read, do not guess:
 - An untracked directory counts only for the files of this task inside it —
   list files, not the directory.
 
-### 4. Write the section
-Create `.claude/docs/report/<plan-file-name>.md` if missing, with
-`# Report — <plan title>` and one line pointing at the plan. Then insert this
-task's section in task-ID order, replacing an existing section for the same ID:
+### 4. Write the task report file
+Create or overwrite `.claude/docs/report/<ID>-<slug>.md`:
 
 ```
-## <ID> — <task name from the plan>
+# <ID> — <task name from the plan>
 
+Plan: `.claude/docs/plan/<plan-file-name>.md` · Index: `.claude/docs/report/<plan-file-name>.md`
 Date: <YYYY-MM-DD> · Lead review: round <N>, CLEAN · Review doc: `.claude/docs/review/<ID>-<slug>.md`
 
-### Kết quả
+## Kết quả
 - DoD (plan): <DoD cell> → <how it was met, with the test that proves it>
 - S1 … Sn: <one line each, done / not done>
 
-### Endpoint thay đổi
+## Endpoint thay đổi
 | Method | Path | Auth | Change |
 
-### File thay đổi
+## File thay đổi
 **ticket-system** (branch at report time: <branch>)
 - `path` — <what> [mixed — also contains …]
 **booking_ticket_vue** / **root repo** — same format; omit a repo with no files.
 
-### Test
+## Test
 - `<command>` → <pass/fail counts>
 
-### Review
+## Review
 - <rounds, who reviewed, key fixes> (short; details stay in the review doc)
 
-### Còn lại
+## Còn lại
 - DEFER: L<n> → B<n> / task <id> …
 - NEEDS-USER: L<n> … (or "none")
 
-### Commit
+## Commit
 (pending — filled by plan-commit)
 ```
 
-### 5. Hand over
-Invoke the `plan-commit` skill for the same task ID. Report the report path and
+### 5. Update the index
+In `.claude/docs/report/<plan-file-name>.md` — create it if missing:
+
+```
+# Report — <plan title>
+
+Plan: `.claude/docs/plan/<plan-file-name>.md` · Ledger: `.claude/ledger/<plan-file-name>.md`.
+Mỗi task CLEAN ở `/lead-review` có 1 file report riêng (viết bởi skill `plan-report`);
+file này chỉ là mục lục.
+
+| ID | Task | Ngày | Lead review | Report |
+|---|---|---|---|---|
+```
+
+Insert this task's row in task-ID order, or replace the existing row for the
+same ID:
+`| <ID> | <task name> | <YYYY-MM-DD> | round <N>, CLEAN | [<ID>-<slug>.md](<ID>-<slug>.md) |`.
+No other content goes into the index.
+
+### 6. Hand over
+Invoke the `plan-commit` skill for the same task ID. Report both file paths and
 the per-repo file list (with mixed marks) in the chat.
 
 ## Boundaries
-- No code edits. Writes only the report file.
+- No code edits. Writes only the task report file and the index row.
 - Do not tick any ledger line.
 - One task ID per run.
