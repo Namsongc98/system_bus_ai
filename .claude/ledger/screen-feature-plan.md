@@ -40,10 +40,10 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] lead-review
 
 ## 0.6 — GET /api/auth/me
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
 - [ ] lead-review
 
 ## 0.7 — PageResponse<T>

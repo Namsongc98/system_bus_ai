@@ -8,3 +8,4 @@ file này chỉ là mục lục.
 |---|---|---|---|---|
 | 0.4 | Khoá endpoint public (B8) | 2026-09-22 | round 2, CLEAN | [0.4-lock-public-endpoints.md](0.4-lock-public-endpoints.md) |
 | 0.5 | Chặn tự đăng ký ADMIN (B11) + gắn `@RoleRequired` (B12) | 2026-09-23 | round 2, CLEAN | [0.5-register-role-required.md](0.5-register-role-required.md) |
+| 0.6 | `GET /api/auth/me` | 2026-09-23 | round 5, CLEAN | [0.6-auth-me.md](0.6-auth-me.md) |
