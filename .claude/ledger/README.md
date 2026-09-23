@@ -28,7 +28,8 @@ ledger; use the slash commands directly.
    (`.claude/docs/review/<ID>-<slug>.md`, one document per task) with a verdict: `OPEN` means fixable
    findings remain → run `/plan-task <ID>` again (fix mode, skill `lead-review-fix`),
    then `/lead-review <ID>`, at most 3 rounds; `CLEAN` runs `plan-report`
-   (`.claude/docs/report/<plan-file-name>.md`) and `plan-commit` (three local commits on
+   (task report `.claude/docs/report/<ID>-<slug>.md` + index row in
+   `.claude/docs/report/<plan-file-name>.md`) and `plan-commit` (three local commits on
    `task/<ID>-<slug>`: `booking_ticket_vue` after FE unit tests, `ticket-system`
    after BE unit tests, then the root docs repo without tests) and `plan-push` (pushes those branches to
    origin, never force), after which the user may tick.

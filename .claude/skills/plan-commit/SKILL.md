@@ -1,6 +1,6 @@
 ---
 name: plan-commit
-description: Commit one finished screen-feature-plan task after plan-report, as three separate commits — booking_ticket_vue (FE unit tests first), then ticket-system (BE unit tests first), then the root System_bus docs repo (no tests) — each on a task/<ID>-<slug> branch, staging exactly the files the report lists, with the message taken from the plan. Does not push itself; hands over to plan-push. Use after plan-report, or when the user invokes /plan-commit.
+description: Commit one finished screen-feature-plan task after plan-report, as three separate commits — booking_ticket_vue (FE unit tests first), then ticket-system (BE unit tests first), then the root System_bus docs repo (no tests) — each on a task/<ID>-<slug> branch, staging exactly the files the task report (.claude/docs/report/<ID>-<slug>.md) lists, with the message taken from the plan. Does not push itself; hands over to plan-push. Use after plan-report, or when the user invokes /plan-commit.
 argument-hint: "<task ID from .claude/docs/plan/screen-feature-plan.md, e.g. 0.4, 1.1>"
 allowed-tools: Read, Grep, Glob, Bash, Edit
 ---
@@ -8,7 +8,11 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 # Skill: Plan Commit (three commits: FE → BE → root docs)
 
 Also callable as `/plan-commit` (`.claude/commands/plan-commit.md`). Normally
-started by `plan-report` right after it writes the task's report section.
+started by `plan-report` right after it writes the task report file.
+
+"The report" below always means the task report file
+`.claude/docs/report/<ID>-<slug>.md` (same `<ID>-<slug>` as the review doc), not
+the plan's index `.claude/docs/report/<plan-file-name>.md`.
 
 `booking_ticket_vue/` and `ticket-system/` are separate git repos (the root
 repo ignores both). The root repo `.` (System_bus) only holds `.claude/…` docs
@@ -19,7 +23,7 @@ order:
 |---|---|---|---|
 | 1 | `booking_ticket_vue` | `npm --prefix booking_ticket_vue run test:unit -- --run` | skip test and commit, record "no files" |
 | 2 | `ticket-system` | `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket,booking_ticket -am test` | skip test and commit, record "no files" |
-| 3 | `.` (System_bus) | **none** — docs only, commit directly | always has files (report, review doc, ledger…) |
+| 3 | `.` (System_bus) | **none** — docs only, commit directly | always has files (task report, index, review doc, ledger…) |
 
 ## Request Template
 
@@ -29,9 +33,11 @@ Plan commit for:
 ## Claude Instructions
 
 ### 1. Gate
-- `.claude/docs/report/<plan-file-name>.md` has a `## <ID> — …` section, and the
-  task's review doc `## 7. Lead review` verdict is `CLEAN`. Otherwise stop.
-- For every repo that has files in the report's `### File thay đổi` list:
+- `.claude/docs/report/<ID>-<slug>.md` exists, the index
+  `.claude/docs/report/<plan-file-name>.md` has a row for `<ID>`, and the task's
+  review doc `## 7. Lead review` verdict is `CLEAN`. Otherwise stop: point to
+  `/plan-report <ID>`.
+- For every repo that has files in the report's `## File thay đổi` list:
   `git -C <repo> diff --cached --quiet` must succeed (nothing already staged).
   Something staged → stop and show it; never commit someone else's staged work.
 - Retry after an earlier failed run: a repo whose branch `task/<ID>-<slug>`
@@ -69,7 +75,7 @@ For repo `<repo>`:
 ### 3. Commit 1 — `booking_ticket_vue` (FE)
 Run the FE unit tests. Any failure or error → **stop: no commit here and none
 of the later commits**. Write the pass/fail counts and failing test names
-under `### Commit` in the report and tell the user to fix it via
+under `## Commit` in the report and tell the user to fix it via
 `/plan-task <ID>` (then `/lead-review <ID>` again). Green → run the commit
 procedure. Do not skip, disable, or mark tests to get green.
 
@@ -79,10 +85,10 @@ tests fail, commit 1 stays on its branch (no rollback, no `reset`); record that
 in the report — the retry skips `booking_ticket_vue` (see Gate).
 
 ### 5. Commit 3 — root repo `.` (System_bus docs)
-No unit tests. First fill the report's `### Commit` with, per code repo:
+No unit tests. First fill the report's `## Commit` with, per code repo:
 branch, short hash, file count, mixed files (or "no files" / test result).
 Then run the commit procedure for the root repo; its listed files include the
-updated report. The root commit's own hash is reported in chat only.
+updated task report and the index. The root commit's own hash is reported in chat only.
 
 ### 6. Report
 - Test results: FE, BE (counts, or "skipped — no files").
@@ -93,6 +99,6 @@ updated report. The root commit's own hash is reported in chat only.
 ## Boundaries
 - Never `git push` here (pushing belongs to `plan-push`), never force anything, never delete branches, never
   `reset`/`clean`/`checkout .`, never `--no-verify` or `--amend`.
-- Commit only files listed in the report for this task.
+- Commit only files listed in the task report for this task.
 - Do not tick any ledger line.
 - One task ID per run.

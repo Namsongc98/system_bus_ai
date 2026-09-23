@@ -18,7 +18,8 @@ Plan push for:
 
 ## Claude Instructions
 
-- Follow the skill exactly: gate (commits recorded in the report, local branch
+- Follow the skill exactly: gate (commits recorded in the task report
+  `.claude/docs/report/<ID>-<slug>.md`, local branch
   matches) → check the remote branch has not diverged → push
   `booking_ticket_vue` → `ticket-system` → root repo with
   `git -C <repo> push -u origin task/<ID>-<slug>` → report hashes and compare

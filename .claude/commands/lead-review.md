@@ -86,7 +86,8 @@ Lead review for:
      (accept the risk, reclassify with their decision, or keep fixing).
    - `CLEAN` (no `FIX` open) → list the `DEFER` / `NEEDS-USER` rows so the user
      knows what they accept. For a screen-feature-plan task, then run the
-     `plan-report` skill (it writes `.claude/docs/report/<plan-file-name>.md` and
+     `plan-report` skill (it writes the task report `.claude/docs/report/<ID>-<slug>.md`
+     plus its row in the index `.claude/docs/report/<plan-file-name>.md`, and
      hands over to `plan-commit`, which commits `booking_ticket_vue` (after FE unit
      tests), then `ticket-system` (after BE unit tests), then the root docs repo
      (no tests), each on `task/<ID>-<slug>`; a test failure stops the commits), and `plan-push` then pushes those branches
