@@ -13,7 +13,7 @@ Use this skill for targeted debugging and minimal fixes.
 2. Classify the layer: component, composable, store, service, Axios, router, build, or runtime.
 3. Inspect nearby project patterns before changing code.
 4. Identify the root cause and apply the smallest fix that preserves architecture.
-5. Read `.claude/references/frontend/api-error-handling.md` when the error involves Axios, API responses, auth redirects, or interceptor behavior.
+5. Read `.claude/references/frontend/services/api-error-handling.md` when the error involves Axios, API responses, auth redirects, or interceptor behavior.
 6. Add or update focused tests when the risk justifies it.
 7. Re-run the failing command, build, or targeted test when practical.
 

@@ -11,8 +11,8 @@ Use this skill before adding new UI components or when refactoring duplicated ma
 
 1. Read `.claude/references/frontend/frontend-instructions.md` if project hierarchy details are needed.
 2. Read `.claude/references/frontend/rules/clean-code.md` and `.claude/references/frontend/rules/rule-component.md` for coding rules and component creation / update rules.
-3. Read `.claude/references/frontend/component-reuse-patterns.md` for Pattern A/B, props/emits, slots, and placement guidance.
-4. Read `.claude/references/frontend/component-registry.md` for the current reusable component inventory, then inspect actual component files before using them.
+3. Read `.claude/references/frontend/components/component-reuse-patterns.md` for Pattern A/B, props/emits, slots, and placement guidance.
+4. Read `.claude/references/frontend/components/component-registry.md` for the current reusable component inventory, then inspect actual component files before using them.
 5. Scan `src/components/elements` for primitive `Base*` components.
 6. Scan `src/components/common` for reusable composed UI blocks.
 7. Scan `src/components/layout` and `src/layouts` for shell components.

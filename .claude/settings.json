@@ -14,7 +14,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/codex_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/codex_hook.py'), run_name='__main__')\" --event PreToolUse",
+            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/claude_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/claude_hook.py'), run_name='__main__')\" --event PreToolUse",
             "timeout": 10,
             "statusMessage": "Checking command safety"
           }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/codex_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/codex_hook.py'), run_name='__main__')\" --event PermissionRequest",
+            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/claude_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/claude_hook.py'), run_name='__main__')\" --event PermissionRequest",
             "timeout": 10,
             "statusMessage": "Checking approval request"
           }
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/codex_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/codex_hook.py'), run_name='__main__')\" --event PostToolUse",
+            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/claude_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/claude_hook.py'), run_name='__main__')\" --event PostToolUse",
             "timeout": 10,
             "statusMessage": "Reviewing command result"
           }
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/codex_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/codex_hook.py'), run_name='__main__')\" --event UserPromptSubmit",
+            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/claude_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/claude_hook.py'), run_name='__main__')\" --event UserPromptSubmit",
             "timeout": 10,
             "statusMessage": "Checking prompt safety"
           }
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/codex_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/codex_hook.py'), run_name='__main__')\" --event Stop",
+            "command": "python3 -c \"from pathlib import Path; import runpy; p=Path.cwd().resolve(); root=next((x for x in [p,*p.parents] if (x/'.claude/hooks/claude_hook.py').exists()), p); runpy.run_path(str(root/'.claude/hooks/claude_hook.py'), run_name='__main__')\" --event Stop",
             "timeout": 10,
             "statusMessage": "Checking final verification reminder"
           }

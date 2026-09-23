@@ -12,7 +12,7 @@ Use this skill when connecting a user interaction to existing data behavior.
 1. Read the full target component before editing.
 2. Identify the triggering template event and handler name.
 3. Prefer the highest-level abstraction already present: store action, then composable method, then service call.
-4. Read `.claude/references/frontend/rules/api-service-rules.md` and `.claude/references/frontend/pinia-store.md` only if service/store contracts are unclear.
+4. Read `.claude/references/frontend/rules/api-service-rules.md` and `.claude/references/frontend/services/pinia-store.md` only if service/store contracts are unclear.
 5. Make the handler `async` when awaiting work.
 6. Reuse existing `loading`, `error`, result refs, and toast composables instead of creating duplicates.
 

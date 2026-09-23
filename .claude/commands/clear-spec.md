@@ -21,7 +21,7 @@ Clear spec for:
 
 1. Read the source material and the relevant `.claude/references/{frontend,backend}`
    rules/workflows for this area.
-2. Produce one design doc at `docs/design/<page-or-api-slug>.md` covering:
+2. Produce one design doc at `.claude/docs/design/<page-or-api-slug>.md` covering:
    fields/params, validation, states/status transitions, error cases,
    pagination/filter semantics (if list), and authorization.
 3. Mark anything not resolvable from the source material as `(TODO/needs confirmation)`

@@ -5,7 +5,8 @@
 > APIs...). Delete this notice after copying.
 
 ## <work-unit-1, e.g. admin/trip-management>
-- [ ] spec — detailed design agreed (fields/validation/states/flow)
+- [ ] spec — **user ticks** after reading the design doc (`/clear-spec`) or
+      the spec-review doc (`/spec-review <ID>`)
 - [ ] implement — code written
 - [ ] test — unit/e2e tests written and passing
 - [ ] review — `backend-review` / `frontend-code-review` / `parallel-review`

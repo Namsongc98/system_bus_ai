@@ -1,5 +1,5 @@
 ---
-description: Audit AGENTS.md, .claude skills, prompts, references, hooks, and custom subagents for consistency.
+description: Audit CLAUDE.md files, .claude skills, prompts, references, hooks, and custom subagents for consistency.
 argument-hint: "<optional focus area>"
 allowed-tools: Read, Grep, Glob
 ---
@@ -13,7 +13,7 @@ Use this prompt to review Claude Code configuration health.
 Audit the Claude configuration in this repository.
 
 Focus:
-- AGENTS entrypoints:
+- CLAUDE.md entrypoints (root, ticket-system, booking_ticket_vue):
 - Skills and prompts:
 - References and links:
 - Hooks:

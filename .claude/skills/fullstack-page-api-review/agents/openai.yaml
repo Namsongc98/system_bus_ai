@@ -1,4 +1,0 @@
-interface:
-  display_name: "Full-stack Page API Review"
-  short_description: "Map page features to FE and BE API readiness"
-  default_prompt: "Use $fullstack-page-api-review to audit this page and produce the FE-BE API readiness matrix."

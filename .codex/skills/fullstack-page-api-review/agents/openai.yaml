@@ -1,4 +1,0 @@
-interface:
-  display_name: "Full-stack Page API Review"
-  short_description: "Map page features to FE and BE API readiness"
-  default_prompt: "Use $fullstack-page-api-review in review-only mode to audit this Vue page, produce the FE-BE readiness matrix, decide whether each gap needs FE wiring, a compatible BE extension, a BE contract change, or a new API, and return a prioritized file-level implementation plan."

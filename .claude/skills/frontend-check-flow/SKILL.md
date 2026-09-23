@@ -13,8 +13,8 @@ Use this skill to diagnose broken application behavior across layers.
 2. Trace the component handler and template binding.
 3. Trace the Pinia store action or composable method.
 4. Trace the service function and Axios client usage.
-5. Read `.claude/references/frontend/rules/api-service-rules.md` and `.claude/references/frontend/api-error-handling.md` when API behavior is involved.
-6. Compare request and response handling against `.claude/references/frontend/api-document.md` when needed.
+5. Read `.claude/references/frontend/rules/api-service-rules.md` and `.claude/references/frontend/services/api-error-handling.md` when API behavior is involved.
+6. Compare request and response handling against `.claude/references/frontend/api/_conventions.md` plus the screen's `.claude/references/frontend/api/<slug>/endpoints.md` when needed.
 7. Report the failing layer, root cause, and minimal fix before or while applying changes.
 
 ## Checklist

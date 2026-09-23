@@ -44,12 +44,17 @@ Run all tests:
 mvn test
 ```
 
-Run tests for one module:
+Run tests for one module (reactor form — builds `common-library` from source):
 
 ```bash
-mvn -f manage-revenue-ticket/pom.xml test
-mvn -f booking_ticket/pom.xml test
+mvn -pl manage-revenue-ticket -am test
+mvn -pl booking_ticket -am test
 ```
+
+Avoid `mvn -f manage-revenue-ticket/pom.xml test` for verification: it takes
+`common-library` from the jar installed in `~/.m2`, which may predate your
+changes. After changing `common-library`, run `mvn install -DskipTests` before
+`spring-boot:run` so the running service uses the new code.
 
 Run one test class:
 

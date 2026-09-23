@@ -49,4 +49,4 @@ Stores may call services. Services must never call stores.
 
 `src/services/axios.js` unwraps API errors with `error.response?.data ?? error`. Callers should read `error?.message` and `error?.code` unless the local code has converted the error into another shape.
 
-Read [api-error-handling.md](../api-error-handling.md) before changing interceptor or caller error behavior.
+Read [api-error-handling.md](../services/api-error-handling.md) before changing interceptor or caller error behavior.

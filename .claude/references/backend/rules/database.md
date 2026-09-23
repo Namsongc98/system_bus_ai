@@ -40,6 +40,9 @@ Important entities include:
 - Do not use `spring.jpa.hibernate.ddl-auto=update` as the production schema-management strategy.
 - Production and release verification should use `validate` or an equivalent non-mutating Hibernate mode after migrations run.
 - Keep migrations immutable after they have been applied to a shared environment. Add a new migration for corrections.
+- `manage-revenue-ticket` uses Flyway: files live in `src/main/resources/db/migration/` and are named `V<n>__<description>.sql` (integer version, two underscores). Never edit an applied file; every schema change is a new file.
+- Only `manage-revenue-ticket` runs migrations. `booking_ticket` shares the database and only runs Hibernate `validate`, so start `manage-revenue-ticket` first.
+- `application-prod.properties` sets `baseline-on-migrate=true` (`baseline-version=1`) for the existing production database. Local databases are not baselined: recreate them from V1.
 - Include constraints, indexes, defaults, and data backfills required by the application change.
 - Plan backward-compatible expand/migrate/contract steps when old and new application versions may overlap.
 

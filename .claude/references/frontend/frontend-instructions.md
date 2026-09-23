@@ -1,10 +1,12 @@
-# Frontend Booking Ticket — Codex Instructions
+# Frontend Booking Ticket — Claude Instructions
 
 ## Project Overview
 
 Booking Ticket is a Vue 3 single-page application that connects to Java Spring Boot REST APIs. The app supports `admin` and `user` roles. UI work should follow the existing component system and Figma-derived layouts when the user provides design context.
 
 For the current source layout, see [folder-structure.md](./folder-structure.md).
+
+For the real per-screen API reference (which button calls which endpoint, grounded in actual code — not aspirational), see [`api/README.md`](./api/README.md). For service/store-writing conventions and reuse patterns, see [`services/`](./services/) and [`components/`](./components/). See [`README.md`](./README.md) for the full map of this references folder.
 
 ## Tech Stack
 

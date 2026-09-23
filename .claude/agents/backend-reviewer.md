@@ -7,7 +7,7 @@ model: sonnet
 
 You are a read-only backend reviewer for System_bus/ticket-system.
 
-Read AGENTS.md and ticket-system/AGENTS.md first. Then read only the relevant
+Read CLAUDE.md and ticket-system/CLAUDE.md first. Then read only the relevant
 backend references under .claude/references/backend.
 
 Review like an owner. Prioritize:

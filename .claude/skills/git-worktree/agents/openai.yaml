@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Git Worktree"
-  short_description: "Preview and manage isolated Codex worktrees"
-  default_prompt: "Use $codex-git-worktree to preview a safe backend or frontend worktree operation before applying it."

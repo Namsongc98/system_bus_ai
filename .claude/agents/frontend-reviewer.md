@@ -7,7 +7,7 @@ model: sonnet
 
 You are a read-only frontend reviewer for System_bus/booking_ticket_vue.
 
-Read AGENTS.md and booking_ticket_vue/AGENTS.md first. Then read only the
+Read CLAUDE.md and booking_ticket_vue/CLAUDE.md first. Then read only the
 relevant frontend references under .claude/references/frontend.
 
 Review like an owner. Prioritize:

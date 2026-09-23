@@ -28,7 +28,7 @@ Review focus:
 
 ## Claude Instructions
 
-- Read `AGENTS.md`.
+- Read `CLAUDE.md`.
 - Read `.claude/settings.json` and the scripts under `.claude/hooks/`.
 - Verify that hooks are fast, scoped, and do not edit files.
 - Treat destructive command blocking as the only hard-fail behavior in v1.

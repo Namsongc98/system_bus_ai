@@ -1,6 +1,6 @@
 ---
 description: Generate a manual test case sheet (Excel) from a clear-spec design doc, for QA or non-technical handoff.
-argument-hint: "<page or API name, path to its docs/design/*.md>"
+argument-hint: "<page or API name, path to its .claude/docs/design/*.md>"
 allowed-tools: Read, Grep, Glob, Write, Bash
 ---
 
@@ -14,7 +14,7 @@ not source code.
 
 Make testcase for:
 - Page or API:
-- Design doc: `docs/design/<page-or-api-slug>.md`
+- Design doc: `.claude/docs/design/<page-or-api-slug>.md`
 - Existing testcase template to follow (if the customer has one):
 
 ## Claude Instructions
@@ -22,7 +22,7 @@ Make testcase for:
 1. Read the design doc (or the implemented code + `.claude/references/frontend/rules`
    if no design doc exists yet).
 2. Use the `xlsx` skill to build a spreadsheet at
-   `docs/testcase/<page-or-api-slug>_testcase.xlsx` with columns: ID, Steps, Input
+   `.claude/docs/testcase/<page-or-api-slug>_testcase.xlsx` with columns: ID, Steps, Input
    data, Expected result, Actual result (leave blank), Notes.
 3. Cover: happy path, each validation rule, each error/status transition, and
    pagination/filter edge cases where relevant.

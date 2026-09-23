@@ -79,8 +79,11 @@ curl http://localhost:8082/actuator/health
 
 ```
 Vue SPA (5173)
-  ├── apiClient     → Manage Revenue Service (8082)  ← Kafka consumer
-  └── bookingClient → Booking Service (8081)          → Kafka producer
+  └── apiClient (VITE_KONG_API_URL = http://localhost:8000/api)
+        ↓
+      Kong gateway (8000)
+        ├── /api/booking → Booking Service (8081)          → Kafka producer
+        └── /api/*       → Manage Revenue Service (8082)  ← Kafka consumer
                                                               ↓
                                                       Kafka (order-events)
                                                               ↓
@@ -101,7 +104,7 @@ Vue SPA (5173)
 ### Frontend Architecture
 
 - **Stores (`src/stores/`):** Pinia — `auth`, `booking`, `admin`, `trip`, `user`, `seat`
-- **Services (`src/services/`):** Axios wrappers per domain; `axios.js` defines both API clients with JWT interceptors
+- **Services (`src/services/`):** Axios wrappers per domain; `axios.js` defines the single `apiClient` (base URL `VITE_KONG_API_URL`, through Kong) with JWT interceptors
 - **Pages (`src/pages/`):** Role-grouped: `auth/`, `user/`, `admin/`
 - **Components (`src/components/`):** `elements/` (primitives), `common/` (widgets), `layout/` (shell)
 
@@ -143,7 +146,7 @@ Local defaults:
 
 ---
 
-## Key Guidelines from `.codex/references/`
+## Key Guidelines from `.claude/references/`
 
 **Backend:**
 - Use constructor injection with `final` fields
@@ -157,6 +160,30 @@ Local defaults:
 - Use Vue 3 Composition API (`<script setup>`) — no Options API, no Vuex
 - API calls go through `src/services/`; stores call services, not axios directly
 - All API endpoints defined in `src/constants/`
+
+---
+
+## Working Rules
+
+Moved here from the former root `AGENTS.md`. Subproject rules live in
+`ticket-system/CLAUDE.md` (backend) and `booking_ticket_vue/CLAUDE.md` (frontend);
+read the matching one before changing code in that subproject.
+
+- Preserve user changes already present in the workspace.
+- Keep changes scoped to the requested frontend, backend, or `.claude/` area.
+- Do not commit secrets, tokens, credentials, local environment files, or runtime data.
+- Never read `.env` or `.env.*` files, print the process environment, expand secret
+  environment variables in commands, or ask the user to paste secret values.
+  Use `.claude/references/backend/environment-variable-names.md` (names only) when
+  checking required configuration; developers start secret-dependent services from
+  a separate terminal.
+- Prefer existing project patterns over new abstractions.
+- Do not delete, move, or rewrite documentation outside the requested scope.
+- Report verification commands run and any checks that could not be run.
+- Git worktrees: only through the `git-worktree` skill (preview → explicit approval
+  of the token → create/cleanup). No raw `git worktree add/remove`, no force removal,
+  no direct branch deletion.
+- `.claude/` layout and the end-to-end workflow: `.claude/VIBE_CODE_INSTRUCTIONS.md`.
 
 ---
 

@@ -7,8 +7,8 @@ model: sonnet
 
 You are a read-only Claude Code configuration reviewer for System_bus.
 
-Inspect CLAUDE.md, .claude, ticket-system/AGENTS.md, and
-booking_ticket_vue/AGENTS.md. Check that Claude Code instructions are coherent and
+Inspect CLAUDE.md, .claude, ticket-system/CLAUDE.md, and
+booking_ticket_vue/CLAUDE.md. Check that Claude Code instructions are coherent and
 usable.
 
 Focus on:

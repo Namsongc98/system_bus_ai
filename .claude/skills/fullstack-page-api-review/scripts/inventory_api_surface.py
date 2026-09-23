@@ -41,7 +41,7 @@ def normalize_path(base: str, child: str) -> str:
 def resolve_root(candidate: Optional[Path]) -> Path:
     start = (candidate or Path.cwd()).resolve()
     for path in (start, *start.parents):
-        if (path / ".codex").is_dir() and (path / "booking_ticket_vue").is_dir():
+        if (path / ".claude").is_dir() and (path / "booking_ticket_vue").is_dir():
             return path
     raise SystemExit("Could not resolve System_bus root. Pass --root explicitly.")
 
