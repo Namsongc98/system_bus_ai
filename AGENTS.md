@@ -29,6 +29,12 @@ Before working in a subproject:
 - Keep changes scoped to the requested frontend, backend, or Codex config area.
 - Do not commit secrets, tokens, credentials, local environment files, or runtime
   data.
+- Never read `.env` or `.env.*` files, print the process environment, expand
+  secret environment variables in commands, or ask the user to paste secret
+  values into the conversation.
+- Use sanitized variable-name documentation under `.codex/references/` when
+  checking required configuration. Developers must start secret-dependent
+  services from a separate terminal; Codex may inspect only redacted logs.
 - Prefer existing project patterns over new abstractions.
 - Do not delete, move, or rewrite documentation outside the requested scope.
 - Report verification commands run and any checks that could not be run.
@@ -36,6 +42,8 @@ Before working in a subproject:
   `.codex/skills/codex-git-worktree/scripts/worktree_flow.py`.
 - Always show the preview and wait for explicit approval of its current token
   before creating or removing a worktree.
+- Each Codex task worktree must contain a common `system_bus_ai` worktree and
+  exactly one nested backend or frontend worktree using the same branch slug.
 - Do not run force worktree removal or direct branch deletion for Codex
   worktrees.
 
@@ -45,6 +53,8 @@ Before working in a subproject:
   `backend-`.
 - `.codex/skills/`: reusable skills, each as a directory containing `SKILL.md`.
 - `.codex/references/backend/`: backend project context, rules, and workflows.
+- `.codex/references/backend/environment-variable-names.md`: sanitized backend
+  environment variable names without secret values.
 - `.codex/references/frontend/`: frontend rules and reference documents.
 - `.codex/hooks.json` and `.codex/hooks/`: project-local Codex lifecycle hooks.
 - `.codex/agents/`: project-local read-only subagents for broad review tasks.

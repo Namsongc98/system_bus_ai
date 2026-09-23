@@ -86,9 +86,12 @@ Implemented backend capabilities:
 
 Implemented cross-project capabilities:
 
-- Review-first Git worktree flow for isolated backend or frontend Codex tasks.
-- Approval tokens bound to repository, remote default SHA, branch, and path.
-- Shared `AGENTS.md` and `.codex` wrapper context for sibling worktrees.
+- Review-first dual Git worktree flow for isolated backend or frontend Codex
+  tasks.
+- Approval tokens bind both the common and selected project repository,
+  including remote default SHAs, branches, and paths.
+- The common repository worktree supplies `.codex`, `AGENTS.md`, and
+  `.gitignore`; the selected project worktree is nested beneath it.
 - Hook guards against force removal, direct branch deletion, and unmanaged
   worktree cleanup.
 

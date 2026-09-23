@@ -1,0 +1,30 @@
+preferred_auth_method = "apikey"
+model = "openai/gpt-5.5"
+model_reasoning_effort = "high"
+model_provider = "my_provider"
+[model_providers.my_provider]
+name = "BnK AI Router"
+base_url = "https://router.bnksolution.com/v1"
+wire_api = "responses"
+env_key = "BNK_ROUTER_AI_KEY"
+
+default_permissions = "system-bus-strict"
+
+[permissions.system-bus-strict]
+description = "Workspace access without dotenv files or application secrets."
+extends = ":workspace"
+
+[permissions.system-bus-strict.filesystem.":workspace_roots"]
+"." = "write"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+
+[shell_environment_policy]
+inherit = "core"
+experimental_use_profile = false
+exclude = [
+  "JWT_*",
+  "DB_*",
+  "MAIL_*",
+  "MINIO_*",
+]

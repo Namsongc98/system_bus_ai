@@ -3,6 +3,7 @@
 
 This script is intentionally conservative:
 - destructive commands are blocked;
+- dotenv reads and secret-environment disclosure are blocked;
 - ambiguous cases produce warnings without editing files;
 - dry-run flags make the policy testable outside Codex runtime.
 """
@@ -60,6 +61,23 @@ DESTRUCTIVE_PATTERNS = [
         re.compile(r"(^|[\s;&|])git\s+(?:-C\s+\S+\s+)?update-ref\s+-d\s+refs/heads/"),
     ),
 ]
+
+DOTENV_PATH_RE = re.compile(
+    r"(?i)(?:^|[\s'\"=:/])\.env(?:\.[A-Za-z0-9_.-]+)?(?:$|[\s'\";&|)])"
+)
+ENV_DUMP_RE = re.compile(
+    r"(^|[\s;&|])(?:"
+    r"(?:command\s+)?(?:/usr/bin/|/bin/)?(?:env|printenv)(?:\s|$|[;&|])|"
+    r"export\s+-p(?:\s|$|[;&|])|"
+    r"declare\s+-x(?:\s|$|[;&|])"
+    r")"
+)
+SENSITIVE_ENV_REFERENCE_RE = re.compile(
+    r"(?i)(?:"
+    r"\$(?:\{)?(?:JWT_|DB_|MAIL_|MINIO_)[A-Z0-9_]*(?:\})?|"
+    r"\b(?:JWT_|DB_|MAIL_|MINIO_)[A-Z0-9_]*\s*="
+    r")"
+)
 
 REDIS_RUNTIME_RE = re.compile(r"Infrastructure/redis-cluster/data")
 REDIRECT_RE = re.compile(r"(?:^|\s)(?:>|>>)\s*(?P<path>/[^\s;&|]+)")
@@ -173,6 +191,12 @@ def extract_status(payload: dict[str, Any], override: str | None) -> int | None:
 
 def blocked_command_reasons(command: str, root: Path) -> list[str]:
     reasons = [name for name, pattern in DESTRUCTIVE_PATTERNS if pattern.search(command)]
+    if DOTENV_PATH_RE.search(command):
+        reasons.append("dotenv_file_access")
+    if ENV_DUMP_RE.search(command):
+        reasons.append("environment_dump")
+    if SENSITIVE_ENV_REFERENCE_RE.search(command):
+        reasons.append("sensitive_environment_reference")
     raw_path = worktree_remove_path(command)
     if raw_path:
         target = Path(raw_path)
