@@ -72,6 +72,15 @@ Committed 2026-09-22, local only (not pushed).
 First run was blocked at the gate by pre-existing staged entries in `ticket-system`
 (`.env.example` deletion, `booking_ticket/.gitignore`); both were unstaged, files unchanged.
 
+**Ghi chú sau (2026-09-23):**
+- Sau commit này, nhánh `task/0.4-lock-public-endpoints` của `ticket-system` có thêm commit
+  `10b0bde` (message = tên nhánh, 48 file, đã push) — không do `plan-commit` tạo. Nó chứa bản
+  sớm của 0.5 (RevenueController 9 method, chưa có L4/L12) và work không thuộc 0.4/0.5
+  (admin dashboard, Flyway V1, Kong/TLS/k8s/CI, bản viết lại `AuthInterceptor`). **Không merge
+  nguyên nhánh 0.4 sau 0.5** — xem kế hoạch xử lý ở mục 0.5.
+- Dấu tick `lead-review` của 0.4 trong ledger nằm ở commit root của 0.5 (`d63eaef`), không có
+  trên nhánh 0.4.
+
 ## 0.5 — Chặn tự đăng ký ADMIN (B11) + gắn `@RoleRequired` (B12)
 
 Date: 2026-09-23 · Lead review: round 2, CLEAN · Review doc: `.claude/docs/review/0.5-register-role-required.md`
@@ -156,7 +165,7 @@ cho qua mọi JWT hợp lệ khi không có `@RoleRequired`.
 - L12 (quyết định a) fixed; `security-reviewer` xác nhận. Lead review 2 → CLEAN.
 
 ### Còn lại
-- DEFER: L5 → task 1.1 / 3.2 (chain test cho từng controller admin) · L6 → task 4.3 · L7 → B19 · L8 → B19 · L9 → B18 · L10 → B7 · L13 → task 4.3 (`LoyaltyPointsController`, `createTicketByLoyalty`: role + ownership check).
+- DEFER: L5 → task 1.1 / 3.2, ghi ở plan B12 (chain test cho từng controller admin) · L6 → B20 / task 4.3 · L7 → B19 · L8 → B19 · L9 → B18 · L10 → B7 · L13 → B20 / task 4.3 (`LoyaltyPointsController`, `createTicketByLoyalty`: role + ownership check).
 - NEEDS-USER: L14 — S9 live chưa chạy (restart backend trên nhánh 0.5 rồi chạy, hoặc chấp nhận test in-process).
 
 ### Commit
