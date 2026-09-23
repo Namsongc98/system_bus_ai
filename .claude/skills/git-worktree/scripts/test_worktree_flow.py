@@ -34,8 +34,8 @@ class WorktreeFlowTest(unittest.TestCase):
         base = Path(self.temp.name)
         self.root = base / "System_bus"
         self.root.mkdir()
-        (self.root / ".codex").mkdir()
-        (self.root / "AGENTS.md").write_text("# Root\n", encoding="utf-8")
+        (self.root / ".claude").mkdir()
+        (self.root / "CLAUDE.md").write_text("# Root\n", encoding="utf-8")
 
         self.seed = base / "seed"
         self.remote = base / "backend.git"
@@ -43,8 +43,8 @@ class WorktreeFlowTest(unittest.TestCase):
         run("git", "init", "-b", "main", str(self.seed))
         run("git", "-C", str(self.seed), "config", "user.name", "Test User")
         run("git", "-C", str(self.seed), "config", "user.email", "test@example.com")
-        (self.seed / "AGENTS.md").write_text("# Backend\n", encoding="utf-8")
-        run("git", "-C", str(self.seed), "add", "AGENTS.md")
+        (self.seed / "CLAUDE.md").write_text("# Backend\n", encoding="utf-8")
+        run("git", "-C", str(self.seed), "add", "CLAUDE.md")
         run("git", "-C", str(self.seed), "commit", "-m", "initial")
         run("git", "clone", "--bare", str(self.seed), str(self.remote))
         run("git", "-C", str(self.remote), "symbolic-ref", "HEAD", "refs/heads/main")
@@ -74,7 +74,7 @@ class WorktreeFlowTest(unittest.TestCase):
         plan, _ = flow.build_create_plan(self.root, "frontend", "ui-review")
         self.assertEqual(Path(plan.source), frontend.resolve())
         self.assertEqual(Path(plan.project_path).name, "booking_ticket_vue")
-        self.assertEqual(plan.branch, "codex/ui-review")
+        self.assertEqual(plan.branch, "claude/ui-review")
 
     def test_preview_rejects_missing_origin(self) -> None:
         run("git", "-C", str(self.source), "remote", "remove", "origin")
@@ -96,7 +96,7 @@ class WorktreeFlowTest(unittest.TestCase):
             flow.build_create_plan(self.root, "backend", "missing-default")
 
     def test_preview_rejects_existing_branch_and_path(self) -> None:
-        run("git", "-C", str(self.source), "branch", "codex/branch-conflict")
+        run("git", "-C", str(self.source), "branch", "claude/branch-conflict")
         with self.assertRaisesRegex(flow.FlowError, "branch already exists"):
             flow.build_create_plan(self.root, "backend", "branch-conflict")
 
@@ -111,9 +111,9 @@ class WorktreeFlowTest(unittest.TestCase):
         wrapper = Path(created["workspace"])
         project = Path(created["project"])
         self.assertTrue(project.exists())
-        self.assertEqual((wrapper / "AGENTS.md").resolve(), (self.root / "AGENTS.md").resolve())
-        self.assertEqual((wrapper / ".codex").resolve(), (self.root / ".codex").resolve())
-        self.assertEqual((project / "AGENTS.md").read_text(encoding="utf-8"), "# Backend\n")
+        self.assertEqual((wrapper / "CLAUDE.md").resolve(), (self.root / "CLAUDE.md").resolve())
+        self.assertEqual((wrapper / ".claude").resolve(), (self.root / ".claude").resolve())
+        self.assertEqual((project / "CLAUDE.md").read_text(encoding="utf-8"), "# Backend\n")
 
         listed = flow.list_worktrees(self.root)
         paths = [
@@ -128,7 +128,7 @@ class WorktreeFlowTest(unittest.TestCase):
         )
         self.assertEqual(cleaned["status"], "cleaned")
         self.assertFalse(wrapper.exists())
-        self.assertFalse(flow.local_branch_exists(self.source, "codex/integration"))
+        self.assertFalse(flow.local_branch_exists(self.source, "claude/integration"))
 
     def test_create_rejects_remote_sha_change(self) -> None:
         plan, _ = flow.build_create_plan(self.root, "backend", "stale")

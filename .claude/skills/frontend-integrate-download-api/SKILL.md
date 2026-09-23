@@ -10,8 +10,8 @@ Use this skill when an endpoint returns a file or Blob instead of normal JSON.
 ## Workflow
 
 1. Read `.claude/references/frontend/rules/api-service-rules.md` for mandatory service-layer rules.
-2. Read `.claude/references/frontend/api-download-service.md` for download implementation examples.
-3. Read `.claude/references/frontend/api-document.md` when endpoint details must come from the project API docs.
+2. Read `.claude/references/frontend/services/api-download-service.md` for download implementation examples.
+3. Read `.claude/references/frontend/api/_conventions.md` plus the screen's `.claude/references/frontend/api/<slug>/endpoints.md` when endpoint details must come from the project API docs.
 4. Identify the target service file, such as `src/services/reportService.js`.
 5. Preserve existing exports and append new functions; do not overwrite unrelated service functions.
 6. Use `apiClient` with `responseType: 'blob'`.

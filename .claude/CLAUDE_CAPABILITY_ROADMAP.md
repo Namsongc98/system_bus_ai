@@ -1,8 +1,8 @@
-# Codex Capability Roadmap
+# Claude Capability Roadmap
 
 ## Summary
 
-This roadmap extends the existing Codex setup with project-local hooks and
+This roadmap extends the existing Claude setup with project-local hooks and
 read-only subagents. The goal is safer tool use, higher-quality review, and less
 main-thread context noise during broad analysis.
 
@@ -16,7 +16,7 @@ Use cases:
 - Warn when escalation requests are vague or overbroad.
 - Warn when user prompts appear to include secrets.
 - Summarize failed Bash commands and suggest the next diagnostic step.
-- Remind Codex to report changed files, verification, skipped checks, and risk.
+- Remind Claude to report changed files, verification, skipped checks, and risk.
 
 Implemented events:
 
@@ -42,16 +42,16 @@ Use cases:
 
 - Broad PR or branch review.
 - Large FE/BE changes where separate reviewers reduce context noise.
-- Security review across config, backend, frontend, and Codex scripts.
+- Security review across config, backend, frontend, and Claude scripts.
 - Test coverage review.
-- Codex configuration audits.
+- Claude configuration audits.
 
 Custom agents:
 
 - `backend-reviewer`
 - `frontend-reviewer`
 - `test-gap-reviewer`
-- `codex-config-reviewer`
+- `config-reviewer`
 - `security-reviewer`
 
 Policy:
@@ -63,16 +63,16 @@ Policy:
 
 ## Review Prompts
 
-- `prompt-codex-review-hooks-roadmap`
-- `prompt-codex-parallel-pr-review`
-- `prompt-codex-config-audit`
+- `/review-hooks`
+- `/parallel-review`
+- `/config-audit`
 
 ## Future Phases
 
 P1:
 
 - Add MCP integration candidates for Figma, Playwright, GitHub, and docs.
-- Add more precise hook payload parsing after observing real Codex hook payloads.
+- Add more precise hook payload parsing after observing real Claude hook payloads.
 - Add a project config review checklist for `/hooks` trust state.
 
 Implemented backend capabilities:
@@ -86,24 +86,23 @@ Implemented backend capabilities:
 
 Implemented cross-project capabilities:
 
-- Review-first Git worktree flow for isolated backend or frontend Codex tasks.
+- Review-first Git worktree flow for isolated backend or frontend Claude tasks.
 - Approval tokens bound to repository, remote default SHA, branch, and path.
-- Shared `AGENTS.md` and `.codex` wrapper context for sibling worktrees.
+- Shared `CLAUDE.md` and `.claude` wrapper context for sibling worktrees.
 - Hook guards against force removal, direct branch deletion, and unmanaged
   worktree cleanup.
 
 P2:
 
-- Package this setup as a plugin if multiple developers need identical Codex
-  capabilities.
-- Add automations for monthly Codex config audit and release-readiness review.
+- ~~Package this setup as a plugin~~ — done: `system-bus-dev` plugin, built by
+  `.claude/plugin/build_plugin.py` (see "Claude Removal" below).
+- Add automations for monthly Claude config audit and release-readiness review.
 - Consider write-capable subagents only after read-only workflows are stable.
 
 
 ## Ledger, Lead-Review, and Spec/Testcase Commands V1
 
-Status: experimental. Added for Claude Code only (this repository no longer
-maintains parallel Codex tooling).
+Status: experimental. Added for Claude Code.
 
 Use cases:
 
@@ -121,14 +120,14 @@ New surfaces:
   is the copy source. Not used for small fixes.
 - `.claude/commands/lead-review.md` — consolidates existing review subagent
   findings and ledger status; read-only; never ticks the ledger itself.
-- `.claude/commands/clear-spec.md` — writes a design doc to `docs/design/`
+- `.claude/commands/clear-spec.md` — writes a design doc to `.claude/docs/design/`
   before implementation.
 - `.claude/commands/make-testcase.md` — writes an Excel test case sheet to
-  `docs/testcase/` via the `xlsx` skill.
+  `.claude/docs/testcase/` via the `xlsx` skill.
 
 Hook change:
 
-- `handle_stop` in `.claude/hooks/codex_hook.py` now also warns (fail-open,
+- `handle_stop` in `.claude/hooks/claude_hook.py` now also warns (fail-open,
   never blocks) when any `.claude/ledger/*.md` file still has unticked
   checklist items.
 
@@ -140,13 +139,12 @@ Policy:
 
 ## Dotenv And Secret-Environment Enforcement
 
-Status: implemented, ported from the (now unused) `.codex` hook of the same
-name — `.codex/hooks/codex_hook.py` already blocked these; `.claude/hooks/codex_hook.py`
-did not, which was a real gap for Claude Code sessions against the
-`AGENTS.md` "never read `.env`... never print the process environment...
+Status: implemented, ported from the former `.codex` hook (since removed) —
+it already blocked these; `.claude/hooks/claude_hook.py` did not, which was a real
+gap for Claude Code sessions against the "Working Rules" in `CLAUDE.md` ("never read `.env`... never print the process environment...
 never expand secret environment variables" requirement.
 
-`blocked_command_reasons` in `.claude/hooks/codex_hook.py` now also blocks:
+`blocked_command_reasons` in `.claude/hooks/claude_hook.py` now also blocks:
 
 - `dotenv_file_access` — reading `.env`/`.env.*` files by any command.
 - `environment_dump` — `env`, `printenv`, `export -p`, `declare -x`.
@@ -155,9 +153,9 @@ never expand secret environment variables" requirement.
 
 Added `.claude/references/backend/environment-variable-names.md` (sanitized
 variable names only, no values) so Claude can check required configuration
-without touching `.env` files, mirroring the equivalent `.codex` reference.
+without touching `.env` files.
 
-Added `.claude/hooks/test_codex_hook.py` covering the three new checks and
+Added `.claude/hooks/test_claude_hook.py` covering the three new checks and
 `scan_open_ledger_items`.
 
 
@@ -170,3 +168,61 @@ a full inventory of every `.claude/` surface (hooks, agents, commands,
 skills, references, ledger), and which of those Claude acts on by itself
 versus which require explicit human action. Update it alongside this roadmap
 whenever a `.claude/` surface is added, renamed, or removed.
+
+## Codex Removal And Path Fixes
+
+Status: implemented.
+
+- Removed `.codex/`, the root `AGENTS.md` (its shared rules moved to the
+  "Working Rules" section of `CLAUDE.md`), `.claude/MIGRATION_REPORT.md`, and the
+  `agents/openai.yaml` files inside skills.
+- `ticket-system/AGENTS.md` and `booking_ticket_vue/AGENTS.md` renamed to
+  `CLAUDE.md` in each subproject (auto-loaded by Claude Code there); their
+  `../.codex/` paths now point to `../.claude/`.
+- Hook renamed `codex_hook.py` → `claude_hook.py` (and its test); `settings.json`
+  rewired. Behavior unchanged.
+- `git-worktree` scripts: wrapper now symlinks `CLAUDE.md` and `.claude`; branch
+  prefix `claude/<task>` instead of `codex/<task>`. Existing `codex/*` branches
+  are not touched or renamed.
+- All plain-text `docs/design/` and `docs/testcase/` mentions now say
+  `.claude/docs/design/` and `.claude/docs/testcase/` (where the files really are).
+- FE skills: 18 stale `references/frontend/*.md` paths repointed to
+  `services/`, `components/`, `api/`.
+
+## Spec Gate For Screen Tasks
+
+Status: implemented.
+
+Screens were coded before their API wiring was correct, so `plan-task` needed a
+fresh, user-approved scope instead of the point-in-time evidence in the plan.
+
+- Added `/spec-review <ID>` (`.claude/commands/spec-review.md`): runs
+  `fullstack-page-api-review` plus a per-capability feature check against the
+  design doc, writes `.claude/docs/review/<ID>-<slug>.md` (readiness matrix,
+  fix scope `S1..Sn`, out of scope, proposed plan changes, open decisions).
+  Read-only for code; never ticks the ledger.
+- `plan-task` gate step 5: stops unless the task's `spec` line is ticked and
+  the review doc exists; implementation scope = that doc's fix scope.
+- Ledger README/TEMPLATE, the plan header, and `VIBE_CODE_INSTRUCTIONS.md`
+  describe the `spec-review → user ticks spec → plan-task` order.
+
+## Spec Review As A Skill
+
+Status: implemented.
+
+`/spec-review` only worked as an explicit command, so surfaces that load
+skills but not commands (e.g. Cowork, per the note already in
+`plan-task/SKILL.md`) could not run it at all.
+
+- Added `.claude/skills/spec-review/SKILL.md` holding the real instructions
+  (Request Template, Claude Instructions, Boundaries), matching the
+  `git-worktree` pattern of command-as-thin-pointer.
+- `.claude/commands/spec-review.md` is now a thin wrapper: keeps its
+  frontmatter (`argument-hint`, `allowed-tools`) and Request Template, points
+  to the skill for full instructions. `/spec-review <ID>` behavior is
+  unchanged.
+- `plan-task/SKILL.md` and `VIBE_CODE_INSTRUCTIONS.md` (§3 skills table) now
+  note the skill as an alternate entry point to the same gate.
+- This does not change the gate semantics: still read-only for code, one task
+  ID per run, never ticks `spec` — Claude can now reach those instructions via
+  skill-matching, but the human-tick requirement is unchanged either way.

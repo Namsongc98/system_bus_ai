@@ -12,8 +12,8 @@ Use this skill when the user provides Figma markup, design specs, or asks to bui
 1. Read `.claude/references/frontend/frontend-instructions.md` for project architecture rules.
 2. Read `.claude/references/frontend/rules/figma-style-rules.md` when exact visual conversion or style mapping is needed.
 3. Read `.claude/references/frontend/rules/clean-code.md` and `.claude/references/frontend/rules/rule-component.md` for coding rules and component creation / update rules.
-4. Read `.claude/references/frontend/component-registry.md` before replacing or creating UI components.
-5. For full page composition, read `.claude/references/frontend/page-integration-patterns.md`.
+4. Read `.claude/references/frontend/components/component-registry.md` before replacing or creating UI components.
+5. For full page composition, read `.claude/references/frontend/components/page-integration-patterns.md`.
 6. Inspect existing components in `src/components/elements`, `src/components/common`, and `src/assets/icons` before creating new markup.
 7. Output or edit Vue SFCs using `<script setup>` followed by `<template>`.
 8. Use Tailwind utility classes and Nuxt UI where appropriate; avoid new `<style>` blocks unless Tailwind cannot express the behavior.

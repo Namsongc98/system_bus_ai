@@ -5,9 +5,6 @@ là mô tả ý định bằng ngôn ngữ tự nhiên và để Claude sinh/s�
 phần: (1) luồng Claude đi từ ý tưởng đến merge, và (2) danh mục đầy đủ
 `.claude/`, ghi rõ phần nào Claude tự làm, phần nào cần người.
 
-Repo này trước đây có chạy song song Codex với cây `.codex/` riêng. Giờ
-không dùng nữa — chỉ còn duy trì `.claude/`. File này không mô tả `.codex/`.
-
 ---
 
 ## 1. "Vibe code" ở repo này nghĩa là gì
@@ -24,7 +21,7 @@ CLAUDE.md              -> kiến trúc, lệnh, quy ước (Claude đọc mỗi 
         .claude/hooks/     -> lưới an toàn, tự chạy trên mọi hành động liên quan
 ```
 
-Tài liệu thiết kế (`docs/design/*.md` sinh từ `/clear-spec`) là nguồn sự
+Tài liệu thiết kế (`.claude/docs/design/*.md` sinh từ `/clear-spec`) là nguồn sự
 thật khi đã có cho 1 trang/API. Đổi yêu cầu thì sửa tài liệu thiết kế TRƯỚC,
 rồi mới sửa code — không để 2 bên lệch nhau.
 
@@ -37,11 +34,23 @@ rồi mới sửa code — không để 2 bên lệch nhau.
  .claude/ledger/<feature>.md  ---- theo dõi spec/implement/test/review/lead-review
         |                          cho từng work-unit
         v
- [0] /clear-spec  ----------------- tài liệu thiết kế tại docs/design/<slug>.md
+ [0] /clear-spec  ----------------- tài liệu thiết kế tại .claude/docs/design/<slug>.md
         |                            (tùy chọn; dùng cho trang/API mới hoặc chưa rõ)
         v
  [0.5] page-api-review / skill fullstack-page-api-review --- bảng đối chiếu FE-BE
         |                                                      (trước khi nối trang với API thật)
+        v
+ [0.8] /spec-review <ID> ---------- màn đã code nhưng API/tính năng chưa chuẩn: chạy
+        |                            fullstack-page-api-review + check từng tính năng theo
+        |                            design doc -> .claude/docs/review/<ID>-<slug>.md
+        |                            (hiện trạng + fix scope S1, S2...)
+        v
+ [HUMAN] bạn đọc doc, tick `spec` -- plan-task bị chặn tới khi dòng này được tick
+        |
+        v
+ [1'] /plan-task <ID> ------------- làm đúng fix scope đã duyệt: BE -> test -> FE -> verify -> review
+        |                            (dùng cho các task trong .claude/docs/plan/screen-feature-plan.md;
+        |                             việc ngoài plan thì đi thẳng [1])
         v
  [1] Implement -------------------- backend-implement / skill backend-implement-api
         |                            frontend: figma-to-vue / integrate-component / reuse-component /
@@ -52,11 +61,27 @@ rồi mới sửa code — không để 2 bên lệch nhau.
         |                            (gọi các subagent backend-reviewer / frontend-reviewer /
         |                             security-reviewer / test-gap-reviewer, chỉ đọc)
         v
- [3] /make-testcase --------------- file Excel test case tại docs/testcase/ (tùy chọn, cho QA)
+ [3] /make-testcase --------------- file Excel test case tại .claude/docs/testcase/ (tùy chọn, cho QA)
         |
         v
- [4] /lead-review ----------------- người xác nhận; chỉ bạn được tick dòng `lead-review`
-        |                            trong ledger
+ [4] /lead-review <ID> ------------ tổng hợp lỗi -> mục "7. Lead review" trong chính doc
+        |                            .claude/docs/review/<ID>-<slug>.md (1 task = 1 tài liệu)
+        |                            mỗi lỗi: FIX (sửa được ngay) / DEFER (ngoài scope -> B<n>)
+        |                            / NEEDS-USER (cần bạn quyết, hạ tầng)
+        |
+        |-- OPEN (còn FIX) --> /plan-task <ID> (tự vào fix mode, skill lead-review-fix)
+        |                      --> /lead-review <ID> lại ... tối đa 3 vòng, rồi dừng hỏi bạn
+        |
+        |-- CLEAN (hết FIX) --> skill plan-report: .claude/docs/report/<tên-file-plan>.md
+        |                       (1 file / plan, 1 mục / task)
+        |                   --> skill plan-commit: 3 commit, nhánh task/<ID>-<slug>, message
+        |                       lấy từ plan:
+        |                       1. booking_ticket_vue (test FE đỏ = dừng)
+        |                       2. ticket-system (test BE đỏ = dừng)
+        |                       3. repo gốc System_bus (.claude/, không test)
+        |                   --> skill plan-push: push các nhánh task/<ID>-<slug> lên origin
+        |                       (FE → BE → gốc; mỗi lần push bạn bấm Allow; không force, không PR)
+        |                   --> chỉ bạn được tick dòng `lead-review` trong ledger
         v
       merge (dọn worktree nếu có dùng, qua skill/command git-worktree)
 ```
@@ -95,17 +120,22 @@ không bao giờ tự ý.
 tự nó không làm gì cả.
 **[human gate]** chỉ bạn được cập nhật.
 
-### `CLAUDE.md` (gốc repo) — [reference]
-Claude đọc file này mỗi session. Kiến trúc, bản đồ module, các lệnh, role,
-trạng thái, config, và trỏ tới tài liệu chi tiết ở `ticket-system/.github/`.
+### `CLAUDE.md` (gốc repo + 2 subproject) — [reference]
+- `CLAUDE.md` ở gốc: Claude đọc mỗi session. Kiến trúc, bản đồ module, các lệnh,
+  role, trạng thái, config, mục **Working Rules** (quy tắc chung), và trỏ tới tài
+  liệu chi tiết ở `ticket-system/.github/`.
+- `ticket-system/CLAUDE.md`: quy tắc riêng backend — Claude Code tự nạp khi làm
+  việc trong `ticket-system/`.
+- `booking_ticket_vue/CLAUDE.md`: quy tắc riêng frontend — tự nạp khi làm việc
+  trong `booking_ticket_vue/`.
 
 ### `.claude/settings.json` — [hook wiring]
 Danh sách `deny` quyền Read/Write với `.env`/`.env.*`, và nối
-`.claude/hooks/codex_hook.py` vào 5 sự kiện: `PreToolUse` (Bash),
+`.claude/hooks/claude_hook.py` vào 5 sự kiện: `PreToolUse` (Bash),
 `PermissionRequest` (Bash), `PostToolUse` (Bash), `UserPromptSubmit`, `Stop`.
 
 ### `.claude/hooks/` — [hook]
-- `codex_hook.py` — policy thật sự, chạy trên mọi sự kiện đã wire ở trên:
+- `claude_hook.py` — policy thật sự, chạy trên mọi sự kiện đã wire ở trên:
   - **PreToolUse (Bash)** — CHẶN CỨNG (exit 2) các lệnh phá hoại (`rm -rf`,
     `git reset --hard`, `git clean -f`, force push, `chmod 777`, xóa
     worktree không quản lý, xóa trực tiếp branch/ref) và giờ còn chặn cả
@@ -125,8 +155,8 @@ Danh sách `deny` quyền Read/Write với `.env`/`.env.*`, và nối
     check nào bị bỏ qua, và rủi ro còn lại trước khi trả lời cuối.
   - Tất cả check trừ PreToolUse đều là cảnh báo (fail-open theo thiết kế) —
     chỉ `PreToolUse` mới thực sự chặn.
-- `test_codex_hook.py` — unit test cho policy (chạy bằng `python3
-  .claude/hooks/test_codex_hook.py`).
+- `test_claude_hook.py` — unit test cho policy (chạy bằng `python3
+  .claude/hooks/test_claude_hook.py`).
 
 ### `.claude/agents/` — [agent]
 5 subagent chỉ-đọc (`tools: Read, Grep, Glob` — không sửa file), được
@@ -153,13 +183,18 @@ Claude), liệt kê theo phạm vi:
 | `/backend-fix-bug` | Chẩn đoán và sửa 1 bug backend, có verify tập trung. |
 | `/backend-implement` | Cài đặt 1 tính năng backend (Spring Boot). |
 | `/backend-review` | Review thay đổi backend (đúng/sai, security, an toàn dữ liệu, test) qua skill `backend-code-review`. |
-| `/clear-spec` | Viết tài liệu thiết kế vào `docs/design/` trước khi code. |
-| `/config-audit` | Audit `AGENTS.md`, skill/prompt/reference/hook/subagent trong `.claude`. |
+| `/clear-spec` | Viết tài liệu thiết kế vào `.claude/docs/design/` trước khi code. |
+| `/spec-review` | Gate `spec` cho 1 task của screen-feature-plan: đối chiếu màn đã code với design doc + BE thật, ghi fix scope vào `.claude/docs/review/<ID>-<slug>.md`, rồi chờ bạn tick `spec`. Chỉ đọc code. |
+| `/config-audit` | Audit các file `CLAUDE.md`, skill/prompt/reference/hook/subagent trong `.claude`. |
 | `/figma-to-vue` | Chuyển HTML/CSS từ Figma thành 1 Vue 3 SFC theo quy ước dự án. |
 | `/git-worktree` | Xem trước và áp dụng 1 thao tác Git worktree kiểu review-first. |
 | `/integrate-component` | Ghép 1 trang Vue từ HTML Figma bằng các component tái sử dụng có sẵn. |
-| `/lead-review` | Tổng hợp kết quả review + trạng thái ledger; gate xác nhận của người. |
-| `/make-testcase` | Xuất 1 file Excel test case vào `docs/testcase/` từ tài liệu clear-spec. |
+| `/lead-review` | Tổng hợp kết quả review + trạng thái ledger, ghi lỗi còn lại vào mục `7. Lead review` của doc `.claude/docs/review/<ID>-<slug>.md` với verdict `OPEN`/`CLEAN`; `CLEAN` mới xin bạn xác nhận. Không sửa code. |
+| `/plan-report` | Viết mục report của 1 task (sau lead-review CLEAN) vào `.claude/docs/report/<tên-file-plan>.md`, rồi chạy `plan-commit`. Thường tự chạy từ `/lead-review`. |
+| `/plan-commit` | 3 commit theo thứ tự: `booking_ticket_vue` (test FE xanh mới commit) → `ticket-system` (test BE xanh mới commit) → repo gốc (docs, không test). Chỉ commit đúng các file report liệt kê, nhánh `task/<ID>-<slug>`, message lấy từ plan. Xong thì chạy `plan-push`. |
+| `/plan-push` | Push các nhánh `task/<ID>-<slug>` của 1 task lên `origin` (FE → BE → repo gốc), chỉ đúng tên nhánh, không force, không tạo PR; trả link compare để mở PR. Thường tự chạy sau `plan-commit`. |
+| `/lead-review-fix` | Sửa các lỗi `FIX` mà `/lead-review` ghi lại, verify + review lại, rồi trả về `/lead-review`. Thường không cần gõ: `/plan-task <ID>` tự chuyển sang bước này khi còn lỗi mở. |
+| `/make-testcase` | Xuất 1 file Excel test case vào `.claude/docs/testcase/` từ tài liệu clear-spec. |
 | `/page-api-review` | Review 1 trang Vue về mức độ sẵn sàng API, khớp hợp đồng FE-BE. |
 | `/parallel-review` | Chạy đồng thời 4 subagent backend/frontend/security/test-gap. |
 | `/reuse-component` | Tạo/điền/refactor 1 component Base/Common tái sử dụng từ HTML Figma. |
@@ -192,10 +227,12 @@ Các workflow đóng gói sẵn mà Claude tự khớp với task qua phần `de
 | `frontend-wire-api-to-event` | Nối 1 API/store action/composable vào 1 event handler của component. |
 | `fullstack-page-api-review` | Bảng đối chiếu FE-BE + kế hoạch chuẩn bị backend cho các API của 1 trang. |
 | `git-worktree` | Xem trước/tạo/liệt kê/dọn dẹp 1 Git worktree độc lập. |
-
-Một vài skill còn có thêm `agents/openai.yaml` — 1 lớp mô tả display-name/
-description để expose cùng skill đó cho 1 agent runner khác ngoài Claude.
-Claude Code không đọc file này; nó không thuộc luồng Claude.
+| `plan-task` | Thực thi 1 task ID của `screen-feature-plan.md` theo fix scope đã duyệt; dừng nếu `spec` chưa tick. Chạy lại khi `/lead-review` còn lỗi `FIX` → tự vào fix mode (`lead-review-fix`). |
+| `plan-report` | Giống `/plan-report` — 1 file report cho mỗi plan, mỗi task 1 mục, danh sách file thay đổi theo từng repo (đánh dấu file `mixed`). |
+| `plan-commit` | Giống `/plan-commit` — FE (test rồi commit) → BE (test rồi commit) → repo gốc (commit, không test), rồi gọi `plan-push`. |
+| `plan-push` | Giống `/plan-push` — push nhánh task lên origin, dừng nếu remote đã lệch, không bao giờ force. |
+| `lead-review-fix` | Giống `/lead-review-fix` — sửa đúng các lỗi `FIX` trong mục `7. Lead review` của `<ID>-<slug>.md`, `DEFER` thành blocker `B<n>`, `NEEDS-USER` để bạn quyết. |
+| `spec-review` | Giống `/spec-review` (xem mục command) — gọi được qua Skill tool ở các surface không load `.claude/commands/`. |
 
 ### `.claude/references/` — [reference]
 Kiến thức domain thụ động, được skill/command/agent đọc khi cần — tự nó
@@ -211,10 +248,18 @@ không bao giờ hành động.
 - `backend/workflows/` — `credential-rotation`, `database-change`,
   `docker-kafka-setup`, `docker-redis-setup`, `implement-endpoint`,
   `investigate-issue`, `openapi-contract`.
-- `frontend/` — `api-document`, `api-download-service`, `api-error-handling`,
-  `api-json-service`, `api-service`, `component-registry`,
-  `component-reuse-patterns`, `folder-structure`, `frontend-instructions`,
-  `page-integration-patterns`, `pinia-store`, `trips-management-api-readiness`.
+- `backend/api/<slug>/endpoints.md` — API backend thật theo từng màn (17 slug,
+  khớp `.claude/docs/design/<slug>.md`), quy ước chung ở `backend/api/_conventions.md`.
+- `design/` — `be-api-design-format`, `fe-screen-design-format` (format mà
+  `/clear-spec` dùng).
+- `frontend/` (gốc) — `README` (mục lục), `frontend-instructions`, `folder-structure`.
+- `frontend/api/<slug>/endpoints.md` — nút/hành động UI nào gọi API nào, theo từng
+  màn; quy ước chung ở `frontend/api/_conventions.md`. `frontend/api/_legacy/`
+  chỉ để tham khảo lịch sử, không dùng để code.
+- `frontend/services/` — `api-service`, `api-json-service`, `api-download-service`,
+  `api-error-handling`, `pinia-store`.
+- `frontend/components/` — `component-registry`, `component-reuse-patterns`,
+  `page-integration-patterns`.
 - `frontend/rules/` — `api-service-rules`, `clean-code`, `figma-style-rules`,
   `rule-component`.
 
@@ -233,7 +278,7 @@ cho các task cần tách biệt. Không phải chỗ bạn tự sửa trực ti
 `/git-worktree`, không bao giờ `rm -rf` (hook đã chặn việc xóa force không
 quản lý rồi).
 
-### `.claude/CLAUDE_CAPABILITY_ROADMAP.md` và `.claude/MIGRATION_REPORT.md`
+### `.claude/CLAUDE_CAPABILITY_ROADMAP.md`
 Tài liệu changelog/lý do sống cho những gì có trong `.claude/` và vì sao.
 Cập nhật `CLAUDE_CAPABILITY_ROADMAP.md` mỗi khi thêm/đổi/xóa 1 năng lực
 trong `.claude/`, theo đúng phong cách các mục đã có.
@@ -244,9 +289,9 @@ trong `.claude/`, theo đúng phong cách các mục đã có.
 
 | Kích hoạt bởi | Ví dụ | Có cần bạn gọi không? | Có được sửa code không? |
 |---|---|---|---|
-| **Hook** | `codex_hook.py` trên sự kiện Bash/prompt/stop | Không — tự chạy trên mọi sự kiện khớp | Không — chỉ chặn hoặc cảnh báo |
+| **Hook** | `claude_hook.py` trên sự kiện Bash/prompt/stop | Không — tự chạy trên mọi sự kiện khớp | Không — chỉ chặn hoặc cảnh báo |
 | **Skill** | `backend-implement-api`, `frontend-fix-error`,... | Không — Claude tự chọn theo mô tả task | Có |
-| **Command** | `/clear-spec`, `/lead-review`,... | Có — bạn gõ `/tên-lệnh` | Tùy lệnh (các lệnh implement thì có; các lệnh review/lead-review chỉ-đọc theo thiết kế) |
+| **Command** | `/clear-spec`, `/lead-review`,... | Có — bạn gõ `/tên-lệnh` | Tùy lệnh (các lệnh implement thì có; các lệnh review/lead-review không sửa code — `/lead-review` chỉ ghi mục `7. Lead review` trong doc review của task) |
 | **Agent** | `backend-reviewer`, `security-reviewer`,... | Gián tiếp — chỉ được 1 review command triệu hồi | Không — chỉ đọc |
 | **Reference** | `.claude/references/**` | Không bao giờ trực tiếp — được đọc ngầm bởi các mục trên | Không áp dụng |
 | **Ledger** | `.claude/ledger/*.md` | Bạn tick `spec`/`lead-review`; các command tick phần còn lại | Bạn được sửa trực tiếp nếu muốn |
@@ -257,11 +302,35 @@ không bao giờ tự đánh dấu 1 work-unit là xong thay bạn.
 
 ---
 
+## 5a. Ví dụ — màn đã code, API/tính năng chưa chuẩn (screen-feature-plan)
+
+1. `/spec-review 1.1` — Claude review BusesRoutes (page + modal + store + service +
+   controller/DTO), ghi `.claude/docs/review/1.1-admin-buses-routes.md`: hiện trạng
+   từng tính năng (`READY`/`MISMATCH`/`MISSING_BE`/`LOCAL_ONLY`...), fix scope `S1..Sn`,
+   open decision.
+2. Bạn đọc doc. Sai/thiếu → nói Claude sửa doc hoặc sửa design doc. Đồng ý → tick
+   `spec` của `1.1` trong `.claude/ledger/screen-feature-plan.md`.
+3. `/plan-task 1.1` — làm đúng `S1..Sn`, tick `implement`/`test`/`review`.
+4. `/lead-review 1.1` — ghi mục `7. Lead review` vào cuối chính doc
+   `.claude/docs/review/1.1-admin-buses-routes.md` (không tạo file riêng; chạy lại
+   `/spec-review` cũng giữ nguyên mục này).
+   - Verdict `OPEN` (còn lỗi `FIX`) → `/plan-task 1.1` lần nữa (tự vào fix mode,
+     chỉ sửa các lỗi `FIX`) → `/lead-review 1.1` lại. Tối đa 3 vòng; quá thì Claude
+     dừng và hỏi bạn.
+   - Verdict `CLEAN` → Claude tự viết mục `1.1` vào
+     `.claude/docs/report/screen-feature-plan.md`, rồi commit lên nhánh
+     `task/1.1-admin-buses-routes`: `booking_ticket_vue` (sau test FE) → `ticket-system`
+     (sau test BE) → repo gốc (không test); repo không có file thì bỏ qua. Sau đó push
+     các nhánh đó lên GitHub (bạn bấm Allow cho từng lệnh push).
+     Bạn đọc các dòng `DEFER`/`NEEDS-USER` còn lại, rồi tick `lead-review`.
+   - Tự động edit file và các lệnh test/git của flow không hỏi lại: cấu hình trong
+     `.claude/settings.local.json` (chỉ máy bạn, đã git ignore).
+
 ## 5. Ví dụ đầy đủ — thêm 1 trang admin mới
 
 1. (Nếu là 1 phần của nhiều trang tương tự) tạo
    `.claude/ledger/<feature-slug>.md` từ `TEMPLATE.md`.
-2. `/clear-spec` — sinh `docs/design/<page>.md` từ mockup/yêu cầu. Bạn đọc
+2. `/clear-spec` — sinh `.claude/docs/design/<page>.md` từ mockup/yêu cầu. Bạn đọc
    và xác nhận.
 3. Skill `fullstack-page-api-review` (hoặc `/page-api-review`) — xác nhận API
    backend nào đã có, API nào cần xây mới.
@@ -282,5 +351,5 @@ không bao giờ tự đánh dấu 1 work-unit là xong thay bạn.
 Dùng skill `claude-capability-review` để quyết định 1 năng lực mới nên đặt ở
 đâu trước khi thêm. Sau khi sửa `.claude/`, chạy `/config-audit` (hoặc agent
 `config-reviewer`), và riêng với thay đổi hook thì chạy thêm `/review-hooks`
-và `python3 .claude/hooks/test_codex_hook.py`. Ghi lại thay đổi vào
+và `python3 .claude/hooks/test_claude_hook.py`. Ghi lại thay đổi vào
 `CLAUDE_CAPABILITY_ROADMAP.md`.

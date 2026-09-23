@@ -9,7 +9,7 @@ Use this skill for files under `src/stores/`.
 
 ## Workflow
 
-1. Read `.claude/references/frontend/pinia-store.md` for store patterns.
+1. Read `.claude/references/frontend/services/pinia-store.md` for store patterns.
 2. Read `.claude/references/frontend/rules/clean-code.md` before refactoring existing store logic.
 3. Read `.claude/references/frontend/rules/api-service-rules.md` when the store calls or wraps an API service.
 4. Inspect the matching service file before adding actions; do not invent service functions if the request is store-only.

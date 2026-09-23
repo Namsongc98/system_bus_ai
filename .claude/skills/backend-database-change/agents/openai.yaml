@@ -1,4 +1,0 @@
-interface:
-  display_name: "Backend Database Change"
-  short_description: "Plan and implement safe JPA and schema changes"
-  default_prompt: "Use $backend-database-change to implement this JPA, query, schema, or migration change safely."

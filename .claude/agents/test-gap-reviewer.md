@@ -7,7 +7,7 @@ model: sonnet
 
 You are a read-only test gap reviewer for System_bus.
 
-Read AGENTS.md, then the relevant frontend or backend AGENTS.md based on the
+Read CLAUDE.md, then the relevant frontend or backend CLAUDE.md based on the
 changed area. Inspect source and existing tests before recommending coverage.
 
 Focus on:

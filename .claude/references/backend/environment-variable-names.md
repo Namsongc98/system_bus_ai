@@ -16,7 +16,7 @@ tokens, passwords, or environment-specific secret values.
 |---|---|---|
 | `DB_URL` | JDBC connection URL. | Local MySQL database URL. |
 | `DB_USERNAME` | MySQL username. | `root` for local development only. |
-| `JPA_DDL_AUTO` | Hibernate schema behavior. | `update` locally; `validate` in production. |
+| `JPA_DDL_AUTO` | Hibernate schema behavior. | `validate` in every environment; the schema is created by Flyway migrations (`manage-revenue-ticket`). |
 
 ## JWT
 
@@ -43,7 +43,7 @@ tokens, passwords, or environment-specific secret values.
 ## Claude Boundary
 
 Claude must not read dotenv files or receive these secret variables in its
-subprocess environment — `.claude/hooks/codex_hook.py` blocks `.env` reads,
+subprocess environment — `.claude/hooks/claude_hook.py` blocks `.env` reads,
 environment dumps, and direct references to these variable names in Bash
 commands (see `dotenv_file_access`, `environment_dump`, and
 `sensitive_environment_reference` in that hook). Start services that require

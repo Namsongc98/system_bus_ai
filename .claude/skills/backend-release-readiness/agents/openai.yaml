@@ -1,4 +1,0 @@
-interface:
-  display_name: "Backend Release Readiness"
-  short_description: "Audit backend readiness before a release"
-  default_prompt: "Use $backend-release-readiness to check this backend release for tests, secrets, migrations, and production configuration."

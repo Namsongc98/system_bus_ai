@@ -12,7 +12,7 @@ Cái **chưa có** — và là phần giá trị nhất nên lấy từ `skillba
 
 1. Thêm command **`/lead-review`** — gate DoD do người ký, tách khỏi review tự động đã có.
 2. Thêm **ledger** (bảng trạng thái) theo từng feature lớn để biết đang ở bước nào.
-3. Nâng cấp `codex_hook.py` (Stop hook) để **chặn Claude tự tuyên bố "done"** khi chưa build/test pass.
+3. Nâng cấp `claude_hook.py` (Stop hook) để **chặn Claude tự tuyên bố "done"** khi chưa build/test pass.
 4. Khi cần làm hàng loạt màn hình/API tương tự → thêm **batch runner** (bash, vì máy Mac) chạy 1 session riêng cho mỗi đối tượng.
 
 Phần dưới giải thích chi tiết từng mục, kèm checklist hành động.
@@ -28,7 +28,7 @@ Phần dưới giải thích chi tiết từng mục, kèm checklist hành độ
 | Commands mỏng | Front-matter + WHAT/WHY/WHEN + `<gate_criteria>` + Post-review 5 chiều | 12 command trong `.claude/commands/` — có review, fix-bug, implement, nhưng **không có `/clear-spec`, `/make-testcase`, `/lead-review`** | Thêm 3 command này (mục 3, 4) |
 | Skills | Không có khái niệm Skill riêng (dùng command) | 21 Skills đầy đủ (`SKILL.md`, có skill còn kèm `agents/openai.yaml`, script Python) | **Không cần làm gì — System_bus đang tiến bộ hơn ở điểm này** |
 | Subagent review | Không có | 5 subagent review read-only (backend/frontend/security/config/test-gap) trong `.claude/agents/` | Đã tốt — có thể tái dùng cho `/lead-review` (mục 3) |
-| Hook enforcement | 5 hook: gate-check, coverage-gate, evidence-lint, post-build, **stop-verify** — chặn ghi code/tuyên bố "done" khi chưa đạt điều kiện | `codex_hook.py` mới dừng ở **an toàn** (chặn `rm -rf`, `git push --force`, dò secret) — Stop hook hiện chỉ "nhắc", chưa **chặn** | Nâng cấp Stop hook (mục 5) |
+| Hook enforcement | 5 hook: gate-check, coverage-gate, evidence-lint, post-build, **stop-verify** — chặn ghi code/tuyên bố "done" khi chưa đạt điều kiện | `claude_hook.py` mới dừng ở **an toàn** (chặn `rm -rf`, `git push --force`, dò secret) — Stop hook hiện chỉ "nhắc", chưa **chặn** | Nâng cấp Stop hook (mục 5) |
 | Ledger (nguồn sự thật của gate) | 1 bảng trạng thái mỗi pipeline: work-unit × bước = ô trạng thái, chỉ user set "verified" | Không có | Thêm ledger nhẹ theo feature lớn (mục 2) |
 | Batch tự động hàng loạt | `.claude/batch/*.ps1` — 1 session/đối tượng, chạy đêm, log/report riêng | Không có (System_bus có `git-worktree` skill để chạy song song, nhưng không có vòng lặp theo danh sách đối tượng) | Thêm khi cần làm nhiều màn/API cùng dạng (mục 4) |
 | Test case Excel cho QA | `/make-testcase` xuất `.xlsx` theo template khách | `backend-write-test`, `frontend-*` chỉ sinh unit test code, không xuất Excel cho non-dev | Thêm nếu có nhu cầu bàn giao QA/khách hàng (mục 4) |
@@ -98,7 +98,7 @@ Nguyên tắc an toàn khi dùng batch (rút từ `skillbase-sample`):
 
 ## 5. Nâng cấp hook Stop để **chặn** thay vì chỉ nhắc (ưu tiên trung bình)
 
-`codex_hook.py` hiện tại đã wire sẵn event `Stop` (xem `.claude/settings.json`) nhưng theo `CLAUDE_CAPABILITY_ROADMAP.md` thì Stop hook mới ở dạng "reminder", chưa chặn cứng. Theo mẫu `stop-verify.ps1.tmpl` của `skillbase-sample`, có thể mở rộng để:
+`claude_hook.py` hiện tại đã wire sẵn event `Stop` (xem `.claude/settings.json`) nhưng theo `CLAUDE_CAPABILITY_ROADMAP.md` thì Stop hook mới ở dạng "reminder", chưa chặn cứng. Theo mẫu `stop-verify.ps1.tmpl` của `skillbase-sample`, có thể mở rộng để:
 
 - Regex hẹp bắt các câu kiểu "đã hoàn thành/verified/done" trong response cuối.
 - Nếu bắt được mà **không** thấy log build/test pass gần nhất (hoặc cờ trong ledger) → chặn (exit khác 0 theo cơ chế hook hiện có) và yêu cầu chạy build/test trước.
@@ -123,5 +123,5 @@ Nguyên tắc an toàn khi dùng batch (rút từ `skillbase-sample`):
 - [ ] Tạo `docs/ledger/` + 1 file ledger mẫu cho feature đang làm dở (mục 2).
 - [ ] Viết `.claude/commands/lead-review.md` (mục 3), cập nhật bảng lệnh trong `CLAUDE.md`.
 - [ ] Nếu sắp làm hàng loạt trang/API tương tự: viết `/clear-spec`, `/make-testcase`, và `scripts/batch/` (mục 4).
-- [ ] Khi các bước trên đã chạy ổn định vài lần thủ công: nâng cấp `codex_hook.py` Stop event để chặn thật (mục 5), test trên nhánh riêng trước.
+- [ ] Khi các bước trên đã chạy ổn định vài lần thủ công: nâng cấp `claude_hook.py` Stop event để chặn thật (mục 5), test trên nhánh riêng trước.
 - [ ] Hỏi lại team: có dùng Cursor không? Nếu có, mirror rule cốt lõi từ `.claude/references/*/rules/*.md` sang `.cursor/rules/*.mdc` (mục 6).

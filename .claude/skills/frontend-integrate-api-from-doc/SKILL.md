@@ -5,16 +5,16 @@ description: Convert backend API documentation or endpoint specs into Vue servic
 
 # Integrate API From Doc
 
-Use this skill when the user provides API documentation, endpoint specs, request/response schemas, or asks Claude to generate services from `.claude/references/frontend/api-document.md`.
+Use this skill when the user provides API documentation, endpoint specs, request/response schemas, or asks Claude to generate services from `.claude/references/frontend/api/_conventions.md` plus the screen's `.claude/references/frontend/api/<slug>/endpoints.md`.
 
 ## Workflow
 
 1. Read `.claude/references/frontend/rules/api-service-rules.md` for mandatory service-layer rules.
-2. Read `.claude/references/frontend/api-document.md` or the user-provided API documentation.
+2. Read `.claude/references/frontend/api/_conventions.md` plus the screen's `.claude/references/frontend/api/<slug>/endpoints.md` or the user-provided API documentation.
 3. Determine the endpoint type:
-   - JSON response: follow `.claude/references/frontend/api-json-service.md`.
-   - Blob/download response: follow `.claude/references/frontend/api-download-service.md`.
-   - Error behavior unclear: check `.claude/references/frontend/api-error-handling.md`.
+   - JSON response: follow `.claude/references/frontend/services/api-json-service.md`.
+   - Blob/download response: follow `.claude/references/frontend/services/api-download-service.md`.
+   - Error behavior unclear: check `.claude/references/frontend/services/api-error-handling.md`.
 4. Map each endpoint to the correct service module under `src/services/`.
 5. Reuse endpoint constants from the current endpoint module where available.
 6. Add named exports without replacing unrelated service functions.

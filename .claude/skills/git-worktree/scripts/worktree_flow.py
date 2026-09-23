@@ -86,7 +86,7 @@ def git(repository: Path, *args: str, check: bool = True) -> str:
 def resolve_root(override: Optional[str] = None) -> Path:
     if override:
         root = Path(override).expanduser().resolve()
-        if not (root / ".codex").exists() or not (root / "AGENTS.md").exists():
+        if not (root / ".claude").exists() or not (root / "CLAUDE.md").exists():
             raise FlowError(f"Invalid System_bus root: {root}")
         return root
 
@@ -95,8 +95,8 @@ def resolve_root(override: Optional[str] = None) -> Path:
     candidates.extend([script_path.parent, *script_path.parents])
     for candidate in candidates:
         if (
-            (candidate / ".codex").exists()
-            and (candidate / "AGENTS.md").exists()
+            (candidate / ".claude").exists()
+            and (candidate / "CLAUDE.md").exists()
             and any((candidate / name).exists() for name in REPOSITORIES.values())
         ):
             return candidate
@@ -222,7 +222,7 @@ def build_create_plan(root: Path, repo: str, task: str) -> tuple[WorktreePlan, l
     state = remote_state(source)
     wrapper, project = worktree_paths(root, repo, task)
     ensure_under(wrapper, workspace_base(root))
-    branch = f"codex/{task}"
+    branch = f"claude/{task}"
 
     if local_branch_exists(source, branch):
         raise FlowError(f"Local branch already exists: {branch}")
@@ -294,8 +294,8 @@ def command_plan(plan: WorktreePlan, root: Path) -> list[str]:
             command_text(
                 ["git", "-C", str(source), "worktree", "add", "-b", plan.branch, str(project), plan.base_sha]
             ),
-            f"symlink {wrapper / 'AGENTS.md'} -> {root / 'AGENTS.md'}",
-            f"symlink {wrapper / '.codex'} -> {root / '.codex'}",
+            f"symlink {wrapper / 'CLAUDE.md'} -> {root / 'CLAUDE.md'}",
+            f"symlink {wrapper / '.claude'} -> {root / '.claude'}",
         ]
     return [
         command_text(
@@ -348,8 +348,8 @@ def create_worktree(root: Path, approved: WorktreePlan) -> dict[str, Any]:
     try:
         wrapper.mkdir(parents=True, exist_ok=False)
         created_wrapper = True
-        (wrapper / "AGENTS.md").symlink_to(root / "AGENTS.md")
-        (wrapper / ".codex").symlink_to(root / ".codex", target_is_directory=True)
+        (wrapper / "CLAUDE.md").symlink_to(root / "CLAUDE.md")
+        (wrapper / ".claude").symlink_to(root / ".claude", target_is_directory=True)
         git(
             Path(approved.source),
             "worktree",
@@ -361,7 +361,7 @@ def create_worktree(root: Path, approved: WorktreePlan) -> dict[str, Any]:
         )
     except Exception:
         if not project.exists() and created_wrapper:
-            for link in (wrapper / ".codex", wrapper / "AGENTS.md"):
+            for link in (wrapper / ".claude", wrapper / "CLAUDE.md"):
                 if link.is_symlink():
                     link.unlink()
             try:
@@ -395,7 +395,7 @@ def build_cleanup_plan(root: Path, repo: str, task: str) -> tuple[WorktreePlan, 
     state = remote_state(source)
     wrapper, project = worktree_paths(root, repo, task)
     ensure_under(wrapper, workspace_base(root))
-    branch = f"codex/{task}"
+    branch = f"claude/{task}"
 
     item = registered_worktree(source, project)
     if not item:
@@ -420,12 +420,12 @@ def build_cleanup_plan(root: Path, repo: str, task: str) -> tuple[WorktreePlan, 
         )
 
     warnings: list[str] = []
-    expected_agents = root / "AGENTS.md"
-    expected_codex = root / ".codex"
-    if not (wrapper / "AGENTS.md").is_symlink() or (wrapper / "AGENTS.md").resolve() != expected_agents.resolve():
-        warnings.append("Wrapper AGENTS.md symlink is missing or unexpected.")
-    if not (wrapper / ".codex").is_symlink() or (wrapper / ".codex").resolve() != expected_codex.resolve():
-        warnings.append("Wrapper .codex symlink is missing or unexpected.")
+    expected_claude_md = root / "CLAUDE.md"
+    expected_claude = root / ".claude"
+    if not (wrapper / "CLAUDE.md").is_symlink() or (wrapper / "CLAUDE.md").resolve() != expected_claude_md.resolve():
+        warnings.append("Wrapper CLAUDE.md symlink is missing or unexpected.")
+    if not (wrapper / ".claude").is_symlink() or (wrapper / ".claude").resolve() != expected_claude.resolve():
+        warnings.append("Wrapper .claude symlink is missing or unexpected.")
 
     return (
         WorktreePlan(
@@ -449,7 +449,7 @@ def build_cleanup_plan(root: Path, repo: str, task: str) -> tuple[WorktreePlan, 
 
 def remove_wrapper(wrapper: Path) -> list[str]:
     warnings: list[str] = []
-    for name in (".codex", "AGENTS.md"):
+    for name in (".claude", "CLAUDE.md"):
         path = wrapper / name
         if path.is_symlink():
             path.unlink()
@@ -519,11 +519,11 @@ def list_worktrees(root: Path) -> dict[str, Any]:
             entries.append(
                 {
                     **item,
-                    "codex_wrapper": str(wrapper)
+                    "claude_wrapper": str(wrapper)
                     if workspace_base(root).resolve(strict=False) in path.resolve(strict=False).parents
                     else "",
-                    "shared_agents": (wrapper / "AGENTS.md").is_symlink(),
-                    "shared_codex": (wrapper / ".codex").is_symlink(),
+                    "shared_claude_md": (wrapper / "CLAUDE.md").is_symlink(),
+                    "shared_claude": (wrapper / ".claude").is_symlink(),
                 }
             )
         result["repositories"][repo] = {

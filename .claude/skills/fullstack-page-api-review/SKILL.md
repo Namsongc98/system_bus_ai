@@ -10,7 +10,7 @@ frontend constants or mock data.
 
 ## Workflow
 
-1. Read the root, frontend, and backend `AGENTS.md` files.
+1. Read the root, frontend, and backend `CLAUDE.md` files.
 2. Identify the target page and every user capability:
    initial load, filters, pagination, detail, create, update, delete, status
    transitions, downloads, and dependent option lists.
