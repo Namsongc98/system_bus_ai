@@ -51,14 +51,14 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] implement
 - [x] test
 - [x] review
-- [ ] lead-review
+- [x] lead-review
 
 ## 0.8 — Capacity fix + unique seat (B4)
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 1.1 — admin/BusesRoutes
 - [ ] spec
@@ -145,6 +145,13 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [ ] lead-review
 
 ## 4.5 — auth/RegisterPage fields
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 4.6 — ADMIN notification: cancelled seat re-booked (Firebase)
 - [ ] spec
 - [ ] implement
 - [ ] test

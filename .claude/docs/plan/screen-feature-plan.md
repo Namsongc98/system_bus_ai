@@ -22,7 +22,7 @@ BE, không đổi ngược.
 | B1 | **FE gọi sai base URL** | `api_endpoint.js`: fallback `8002` (system), `8001` (booking). BE chạy `8081`/`8082`. Kong proxy ở `8000`, còn `8001` là **Kong Admin API** | Không màn hình nào gọi được BE nếu `.env` không override; fallback booking đang trỏ vào Admin API của Kong | Cả 2 client trỏ `http://localhost:8000/api` (đi qua Kong). Kiểm tra `.env` của FE (chưa đọc vì bị chặn đọc `.env`) |
 | B2 | **Path lệch số nhiều / số ít** | FE `/buses`, `/routes`, `/trips`, `/tickets`, `/users`, `/loyalty-points`, `/base-salary`. BE `/api/bus`, `/api/route`, `/api/trip`, `/api/ticket`, `/api/loyalty_point`, `/api/base_salary` | Mọi service admin + user trả 404 | Sửa `API_ENDPOINTS` theo BE, **chỉ cho endpoint BE đã có**. Endpoint BE chưa có giữ nguyên, đánh dấu `// BE: missing` |
 | B3 | **Booking không tạo vé** | `BookingController` → `BookingProducer` → Kafka `order-events` → `RevenueConsumer.consumeBooking` chỉ `System.out.println` | Luồng đặt vé end-to-end không có kết quả | Xem mục 2.2 (thiết kế booking) |
-| B4 | **Check sức chứa sai** | `countTicketsByBusId` đếm vé theo **bus trên mọi chuyến**, so sánh `==` thay vì `>=`, không trừ vé `CANCELLED`; không có unique `(trip_id, seat_number)` | Sau vài chuyến, xe báo hết chỗ vĩnh viễn; 2 người đặt trùng ghế | Đếm theo `trip_id`, `>=`, loại `CANCELLED`, thêm unique constraint |
+| B4 | **Check sức chứa sai** | `countTicketsByBusId` đếm vé theo **bus trên mọi chuyến**, so sánh `==` thay vì `>=`, không trừ vé `CANCELLED`; không có unique `(trip_id, seat_number)` | Sau vài chuyến, xe báo hết chỗ vĩnh viễn; 2 người đặt trùng ghế | Đếm theo `trip_id`, `>=`, loại `CANCELLED`; unique `(trip_id, ghế của vé chưa huỷ)` — vé `CANCELLED` trả lại ghế (0.8, spec review D1) |
 | B5 | **Khách chỉ đặt được 1 vé cả đời** | `TicketService.createTicket`: `if customer.userStatus == BOOKED → throw` | Khách thứ 2 lần mua bị chặn | `(TODO/needs confirmation)` — đây là rule nghiệp vụ hay bug? Đề xuất bỏ check |
 | B6 | **`UserController` rỗng** | `UserController.java` là class trống | User management, profile, chọn tài xế khi tạo chuyến đều bị chặn | Mục 1.2 |
 | B7 | **Code chết + Feign trỏ path không tồn tại** | `booking_ticket/.../TicketService` không được ai gọi; `RevenueClient` gọi `/users/{id}`, `/loyalty/...`, `/trips/{id}` trên 8082 — không controller nào map các path đó | Gây hiểu nhầm khi đọc code | Xoá `TicketService` + `RevenueClient` của `booking_ticket` khi làm B3 |
@@ -78,7 +78,7 @@ thay vì seed SQL tay.
 | 0.5 | Chặn tự đăng ký ADMIN (B11) + gắn `@RoleRequired` (B12) | BE | S | Register với `role=ADMIN` → 201, tài khoản lưu **và** JWT (access + refresh) đều CUSTOMER; CUSTOMER gọi `POST /api/bus` → **403**, ADMIN → 200; mọi handler của Bus/Route/Trip/Revenue + Salary/BaseSalary/BaseLoyaltyPoints/LoyaltyReward/RedisTest resolve `@RoleRequired(ADMIN)`; `PUT /api/auth/update-password` chỉ đổi mật khẩu của chính người gọi (tài khoản lấy từ JWT). Kiểm bằng `AuthControllerTest`, `BusControllerAuthTest`, `SalaryControllerAuthTest`, `RoleRequiredCoverageTest` (reactor: `mvn -f ticket-system/pom.xml -pl manage-revenue-ticket -am test`) |
 | 0.6 | `GET /api/auth/me` | BE + FE | S | Trả `id, email, role, fullName, phone` của người gọi: `id` từ JWT, `email`/`role` từ `users`, `fullName`/`phone` từ `profiles` (null nếu chưa có); `authStore.fetchMe` được gọi thật sau login/register và khi chưa có user; lỗi JWT (401/404) → xoá toàn bộ localStorage/sessionStorage/cookie và về login. Kiểm bằng `AuthControllerTest`, `AuthServiceTest`, `authStore.spec.js`, `axiosAuth.spec.js` |
 | 0.7 | Quy ước response list: `PageResponse<T>{content, page, size, totalElements, totalPages}` trong `common-library` | BE | S | Record `PageResponse<T>` (`page` 0-based) + `from(Page)` / `from(Page, mapper)`, JSON đúng 5 key; `PageRequests.of(page, size)` chặn `page < 0`, `size < 1` hoặc `size > 100` → 400. Dùng cho mọi list mới ở Phase 1–4. **Không** chuyển endpoint cũ: `GET /api/bus` → 1.1, `GET /api/trip/scheduled` → 1.3, `GET /api/salary` → 4.4. Kiểm bằng `PageResponseTest`, `PageRequestsTest` (`mvn -f ticket-system/pom.xml -pl common-library test`) |
-| 0.8 | Sửa check sức chứa (B4): đếm theo `trip_id`, `>=`, loại `CANCELLED` + migration unique `(trip_id, seat_number)` | BE | M | Test: chuyến 2 của cùng xe vẫn đặt được; insert trùng ghế → `DataIntegrityViolationException` |
+| 0.8 | Sửa check sức chứa (B4): đếm theo `trip_id`, `>=`, loại `CANCELLED` + migration V2 unique `(trip_id, active_seat_number)` (cột generated, vé huỷ = `NULL`) + stub báo ADMIN khi ghế đã huỷ được đặt lại (N1) | BE | M | `createTicket`/`updateTicket`/`createTicketByLoyalty` dùng `countActiveTicketsByTripId` + `>=` và check ghế; hết chỗ / trùng ghế → 409 (`ConflictException`); ghế ngoài `1..capacity` → 400; chuyến 2 của cùng xe vẫn đặt được; insert trùng ghế → `DataIntegrityViolationException` (`uk_tickets_trip_active_seat`); đặt lại ghế đã huỷ → phát `SeatRebookedEvent`, `StaffNotificationService` chỉ log (Firebase → 4.6). Dữ liệu trùng có sẵn xử lý tay trước khi chạy V2 (D4). Kiểm bằng `TicketSeatConstraintTest`, `TicketServiceTest`, `FlywaySchemaValidationTest` (`mvn -f ticket-system/pom.xml -pl manage-revenue-ticket -am test`). Mô phỏng: `.claude/docs/proplem-business/0.8-seat-cancel-rebook.md` |
 
 `/api/auth/logout` và `/refresh`: FE đã gọi nhưng BE chưa có. JWT stateless nên
 logout có thể chỉ xoá token phía FE; refresh để Phase 4. Ghi rõ trong
@@ -233,6 +233,26 @@ BE có 4 endpoint `/api/revenue/{report,by-route,by-date,top-customers}` — pat
 | 4.3 | Loyalty | FE service có, path lệch (`/loyalty-points` vs `/api/loyalty_point`); BE chỉ có POST/PUT, không có GET | Chốt rule tích điểm (hiện bị comment out trong `TicketService.createTicket`) trước khi làm; xử lý B20 (role + chủ sở hữu cho `/api/loyalty_point`, `createTicketByLoyalty`) |
 | 4.4 | Salary | BE có `/api/salary`, `/api/base_salary`; FE chưa có page | Không có màn hình → để sau. API đã khoá ADMIN ở 0.5 (L12) |
 | 4.5 | RegisterPage | Chạy được; thiếu `fullName`, `phone` theo design | Thêm field vào `UserRequestDto` + lưu `Profile` |
+| 4.6 | Thông báo ADMIN: ghế đã huỷ được đặt lại (N1) | 0.8 phát `SeatRebookedEvent`, `StaffNotificationService` rỗng (chỉ log); chưa có design doc, chưa có Firebase | Chạy `/clear-spec` trước; xem mục 4.6 bên dưới |
+
+
+### 4.6 Thông báo ADMIN khi ghế đã huỷ được đặt lại (Firebase)
+
+Nghiệp vụ (N1, chốt 2026-09-24): đặt hoặc đổi sang một ghế mà trên cùng chuyến ghế đó đã từng có
+vé `CANCELLED` (mọi kiểu huỷ) → push Firebase cho **ADMIN** để admin **gọi cho người vừa đặt**.
+Mô phỏng: `.claude/docs/proplem-business/0.8-seat-cancel-rebook.md`. Phụ thuộc 0.8 (event + stub),
+2.2 (luồng đặt vé thật); huỷ vé từ UI cần 2.4 / 4.2.
+
+| Tính năng | FE hiện tại | BE hiện tại | Cần làm BE | Cần làm FE |
+|---|---|---|---|---|
+| Nhận sự kiện | — | `SeatRebookedEvent` + `StaffNotificationService` (stub, 0.8) | Thay thân stub: lưu `staff_notifications` (migration mới: `id, type=SEAT_REBOOKED, trip_id, seat_number, ticket_id, customer_id, status NEW/CALLED, created_at`) rồi gửi FCM | — |
+| Đăng ký thiết bị ADMIN | — | Không có | `POST /api/notification/device-token` (`@RoleRequired(ADMIN)`, bảng `device_tokens`: user_id, token unique, updated_at) | Sau khi ADMIN login: `firebase/messaging` xin quyền, lấy token, gọi API |
+| Gửi push | — | Không có | Firebase Admin SDK; credentials qua biến môi trường `FIREBASE_CREDENTIALS_PATH` (chỉ tên); payload chỉ có id (không SĐT/tên); token hỏng → xoá | Service worker nhận push, hiện toast/notification |
+| Danh sách thông báo | — | Không có | `GET /api/notification?status&page&size` → `PageResponse<StaffNotificationResponse>` (chuyến, ghế, tên + SĐT người vừa đặt từ `profiles`) | Chuông ở admin header (badge số `NEW`) + drawer danh sách |
+| Đánh dấu đã gọi | — | Không có | `PATCH /api/notification/{id}/called` (`NEW → CALLED`, idempotent) | Nút "Đã gọi" trên từng dòng |
+
+Endpoint trong `src/constants/`, service → store `notification` → component. Toàn bộ API
+`@RoleRequired(ADMIN)`. Open: xem mục 3.
 
 ---
 
@@ -276,3 +296,4 @@ sau — unique constraint và seat map API vẫn dùng lại được y nguyên.
 | Huỷ vé trước giờ đi bao lâu? Có hoàn tiền không? | 2.4 |
 | Bulk action ở UserManagement gồm những gì? | 1.2 |
 | Loyalty: bao nhiêu vé = 1 điểm, dùng điểm đổi gì? | Phase 4 |
+| Firebase project + service account; có lưu lịch sử thông báo không; ADMIN offline thì xử lý thế nào; có ghi kết quả cuộc gọi không? | 4.6 |
