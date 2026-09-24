@@ -29,9 +29,10 @@ ledger; use the slash commands directly.
    findings remain → run `/plan-task <ID>` again (fix mode, skill `lead-review-fix`),
    then `/lead-review <ID>`, at most 3 rounds; `CLEAN` runs `plan-report`
    (task report `.claude/docs/report/<ID>-<slug>.md` + index row in
-   `.claude/docs/report/<plan-file-name>.md`) and `plan-commit` (three local commits on
+   `.claude/docs/report/<plan-file-name>.md`) and stops so the user can inspect the
+   changed files; the user then runs `/git-commit <ID>` (three local commits on
    `task/<ID>-<slug>`: `booking_ticket_vue` after FE unit tests, `ticket-system`
-   after BE unit tests, then the root docs repo without tests) and `plan-push` (pushes those branches to
+   after BE unit tests, then the root docs repo without tests, then pushes those branches to
    origin, never force), after which the user may tick.
 6. The `Stop` hook (`.claude/hooks/claude_hook.py`) automatically warns
    (without blocking) if any ledger still has an unticked line when Claude is

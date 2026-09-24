@@ -1,11 +1,11 @@
 ---
 name: plan-report
-description: Write the report for one screen-feature-plan task after /lead-review returned CLEAN — one report file per task (.claude/docs/report/<ID>-<slug>.md) plus a row in the plan's index file (.claude/docs/report/<plan-file-name>.md) — then hand over to plan-commit. Use when a lead review is CLEAN, when the user asks for a task report, or invokes /plan-report.
+description: Write the report for one screen-feature-plan task after /lead-review returned CLEAN — one report file per task (.claude/docs/report/<ID>-<slug>.md) plus a row in the plan's index file (.claude/docs/report/<plan-file-name>.md) — then show the changed-file list and stop; the user runs /git-commit. Use when a lead review is CLEAN, when the user asks for a task report, or invokes /plan-report.
 argument-hint: "<task ID from .claude/docs/plan/screen-feature-plan.md, e.g. 0.4, 1.1>"
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Skill
 ---
 
-# Skill: Plan Report (record a finished task, then commit it)
+# Skill: Plan Report (record a finished task, show its changed files)
 
 Also callable as `/plan-report` (`.claude/commands/plan-report.md`). `/lead-review`
 runs it automatically when its verdict is `CLEAN`.
@@ -14,14 +14,15 @@ runs it automatically when its verdict is `CLEAN`.
 /lead-review <ID> --CLEAN--> plan-report
                                1. write .claude/docs/report/<ID>-<slug>.md   (task report)
                                2. update .claude/docs/report/<plan-file-name>.md (index row)
-                         --> plan-commit --> plan-push --> user ticks `lead-review`
+                               3. show the changed-file list, STOP
+user inspects the changes --> /git-commit <ID> (commit + push) --> user ticks `lead-review`
 ```
 
 Two outputs, both in `.claude/docs/report/`:
 
 | File | Content |
 |---|---|
-| `<ID>-<slug>.md` — same name as the task's review doc `.claude/docs/review/<ID>-<slug>.md` | The full report of one task. `plan-commit` and `plan-push` read it. |
+| `<ID>-<slug>.md` — same name as the task's review doc `.claude/docs/review/<ID>-<slug>.md` | The full report of one task. `git-commit` reads it. |
 | `<plan-file-name>.md` — `.claude/docs/plan/screen-feature-plan.md` → `screen-feature-plan.md` | Index only: one table row per reported task, linking to its task file. |
 
 ## Request Template
@@ -48,7 +49,7 @@ Read, do not guess:
 - Git, per repo (`ticket-system`, `booking_ticket_vue`, and the root repo for
   `.claude/…`): `git -C <repo> status --porcelain` and `git -C <repo> diff -- <file>`.
 
-### 3. Build the changed-file list (used by `plan-commit` to stage)
+### 3. Build the changed-file list (used by `git-commit` to stage)
 - Start from every file the review doc names as changed or added for this task
   (fix scope, lead-review evidence, tests), plus the task's own docs in the root
   repo: the task report file `<ID>-<slug>.md`, the index `<plan-file-name>.md`,
@@ -96,7 +97,7 @@ Date: <YYYY-MM-DD> · Lead review: round <N>, CLEAN · Review doc: `.claude/docs
 - NEEDS-USER: L<n> … (or "none")
 
 ## Commit
-(pending — filled by plan-commit)
+(pending — filled by git-commit)
 ```
 
 ### 5. Update the index
@@ -118,11 +119,15 @@ same ID:
 `| <ID> | <task name> | <YYYY-MM-DD> | round <N>, CLEAN | [<ID>-<slug>.md](<ID>-<slug>.md) |`.
 No other content goes into the index.
 
-### 6. Hand over
-Invoke the `plan-commit` skill for the same task ID. Report both file paths and
-the per-repo file list (with mixed marks) in the chat.
+### 6. Hand over to the user
+Do **not** invoke `git-commit`. In the chat, report both file paths and the
+per-repo changed-file list (with mixed marks and a one-line note of what changed
+in each file), plus `git -C <repo> diff --stat` for tracked files, so the user
+can inspect the changes. End by telling the user to run `/git-commit <ID>` when
+they are ready to commit and push.
 
 ## Boundaries
 - No code edits. Writes only the task report file and the index row.
+- Never commit or push — that starts only when the user runs `/git-commit`.
 - Do not tick any ledger line.
 - One task ID per run.
