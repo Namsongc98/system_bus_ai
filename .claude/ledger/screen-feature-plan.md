@@ -44,13 +44,13 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] implement
 - [x] test
 - [x] review
-- [ ] lead-review
+- [x] lead-review
 
 ## 0.7 — PageResponse<T>
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
 - [ ] lead-review
 
 ## 0.8 — Capacity fix + unique seat (B4)
