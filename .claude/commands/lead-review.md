@@ -1,5 +1,5 @@
 ---
-description: Consolidate automated review findings and ledger status into the "Lead review" section of the task's review doc, with a verdict; OPEN sends the task back to /plan-task, CLEAN asks the user for explicit sign-off.
+description: Consolidate automated review findings and ledger status into the "Lead review" section of the task's review doc, with a verdict; OPEN sends the task back to /plan-task, CLEAN writes the task report, shows the changed files and stops (the user runs /git-commit).
 argument-hint: "<work-unit name, branch, PR, or ledger file>"
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Skill
 ---
@@ -17,7 +17,8 @@ Loop for screen-feature-plan tasks (the user runs each command):
 /lead-review <ID>  --OPEN-->  /plan-task <ID>  (fix mode: skill lead-review-fix)
       ^                              |
       +------------------------------+     at most 3 rounds, then ask the user
-/lead-review <ID>  --CLEAN-->  plan-report --> plan-commit (FE → BE → root commits) --> plan-push --> user ticks `lead-review`
+/lead-review <ID>  --CLEAN-->  plan-report --> STOP (user reads the changed-file list)
+/git-commit <ID>  (user runs it: commits FE → BE → root, then pushes) --> user ticks `lead-review`
 ```
 
 ## Request Template
@@ -87,19 +88,20 @@ Lead review for:
    - `CLEAN` (no `FIX` open) → list the `DEFER` / `NEEDS-USER` rows so the user
      knows what they accept. For a screen-feature-plan task, then run the
      `plan-report` skill (it writes the task report `.claude/docs/report/<ID>-<slug>.md`
-     plus its row in the index `.claude/docs/report/<plan-file-name>.md`, and
-     hands over to `plan-commit`, which commits `booking_ticket_vue` (after FE unit
-     tests), then `ticket-system` (after BE unit tests), then the root docs repo
-     (no tests), each on `task/<ID>-<slug>`; a test failure stops the commits), and `plan-push` then pushes those branches
-     to origin (the user approves each push). Finally ask the user
-     to confirm and tick the `lead-review` line themselves.
+     plus its row in the index `.claude/docs/report/<plan-file-name>.md`) and
+     **stop there** — do not commit or push. Show the per-repo changed-file list
+     from the report (with `mixed` marks) so the user can inspect the changes.
+     Tell the user the next step is `/git-commit <ID>` when they are ready (it
+     commits `booking_ticket_vue`, `ticket-system`, then the root docs repo, and
+     pushes those branches), and that they tick the `lead-review` line themselves.
 
 ## Boundaries
 
 - No code edits and no ledger edits. This command itself writes only the
   `## 7. Lead review` section of `.claude/docs/review/<ID>-<slug>.md`; on
-  `CLEAN` the `plan-report` / `plan-commit` skills it runs write the report and
-  make commits, and `plan-push` pushes the task branches (never force).
+  `CLEAN` the `plan-report` skill it runs writes the report and the index row.
+- Never commit or push from this command — committing starts only when the
+  user runs `/git-commit <ID>`.
 - Never tick `lead-review` and never claim the work-unit is done.
 - If no automated review has run yet, say so and stop — do not review from
   scratch inside this command.
