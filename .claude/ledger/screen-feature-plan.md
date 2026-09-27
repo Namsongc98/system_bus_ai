@@ -13,9 +13,9 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 
 ## 0.2 — FE API_ENDPOINTS aligned to BE
 - [x] spec
-- [x] implement
-- [x] test
-- [x] review
+- [] implement
+- [] test
+- [] review
 - [ ] lead-review
 
 ## 0.3 — Flyway + V1 baseline
@@ -61,7 +61,7 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] lead-review
 
 ## 1.1 — admin/BusesRoutes
-- [ ] spec
+- [x] spec
 - [ ] implement
 - [ ] test
 - [ ] review
