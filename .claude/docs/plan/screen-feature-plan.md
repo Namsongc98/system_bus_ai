@@ -297,3 +297,4 @@ sau — unique constraint và seat map API vẫn dùng lại được y nguyên.
 | Bulk action ở UserManagement gồm những gì? | 1.2 |
 | Loyalty: bao nhiêu vé = 1 điểm, dùng điểm đổi gì? | Phase 4 |
 | Firebase project + service account; có lưu lịch sử thông báo không; ADMIN offline thì xử lý thế nào; có ghi kết quả cuộc gọi không? | 4.6 |
+| Dev chạy BE thế nào để đi qua Kong: Docker (`Infrastructure/app/docker-compose.yml`, Kong trỏ tên container) hay `mvn spring-boot:run` + cấu hình Kong dev trỏ `host.docker.internal:8081/8082` (sửa `Infrastructure/`, task riêng)? (phát hiện ở 0.1, D2) | kiểm thủ công mọi task FE qua Kong |
