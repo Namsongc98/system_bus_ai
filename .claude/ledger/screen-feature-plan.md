@@ -13,9 +13,9 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 
 ## 0.2 — FE API_ENDPOINTS aligned to BE
 - [x] spec
-- [x] implement
-- [x] test
-- [x] review
+- [] implement
+- [] test
+- [] review
 - [ ] lead-review
 
 ## 0.3 — Flyway + V1 baseline
@@ -40,28 +40,28 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] lead-review
 
 ## 0.6 — GET /api/auth/me
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 0.7 — PageResponse<T>
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 0.8 — Capacity fix + unique seat (B4)
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 1.1 — admin/BusesRoutes
-- [ ] spec
+- [x] spec
 - [ ] implement
 - [ ] test
 - [ ] review
@@ -145,6 +145,13 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [ ] lead-review
 
 ## 4.5 — auth/RegisterPage fields
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 4.6 — ADMIN notification: cancelled seat re-booked (Firebase)
 - [ ] spec
 - [ ] implement
 - [ ] test

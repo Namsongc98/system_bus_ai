@@ -28,13 +28,16 @@ ledger; use the slash commands directly.
    (`.claude/docs/review/<ID>-<slug>.md`, one document per task) with a verdict: `OPEN` means fixable
    findings remain → run `/plan-task <ID>` again (fix mode, skill `lead-review-fix`),
    then `/lead-review <ID>`, at most 3 rounds; `CLEAN` runs `plan-report`
-   (`.claude/docs/report/<plan-file-name>.md`) and `plan-commit` (three local commits on
+   (task report `.claude/docs/report/<ID>-<slug>.md` + index row in
+   `.claude/docs/report/<plan-file-name>.md`) and stops so the user can inspect the
+   changed files; the user then runs `/git-commit <ID>` (three local commits on
    `task/<ID>-<slug>`: `booking_ticket_vue` after FE unit tests, `ticket-system`
-   after BE unit tests, then the root docs repo without tests) and `plan-push` (pushes those branches to
+   after BE unit tests, then the root docs repo without tests, then pushes those branches to
    origin, never force), after which the user may tick.
-6. The `Stop` hook (`.claude/hooks/claude_hook.py`) automatically warns
-   (without blocking) if any ledger still has an unticked line when Claude is
-   about to end the turn — a reminder only, it never blocks the session.
+6. The `Stop` hook (`.claude/hooks/claude_hook.py`) warns (without blocking)
+   if any ledger still has an unticked line when Claude is about to end the
+   turn. It does block once per turn for secrets in the diff or uncommitted
+   code changes that still need verification — never for ledger state.
 
 ## Conventions
 

@@ -4,3 +4,4 @@ ticket-system/
 .claude/worktrees/
 .claude/settings.local.json
 /dist/
+__pycache__/

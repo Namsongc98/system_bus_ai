@@ -46,6 +46,7 @@ Plan task:
 | 4.3 | Loyalty | — | 2.2 | `backend-implement-api` | loyalty rule |
 | 4.4 | Salary | — | — | — | deferred: no screen exists |
 | 4.5 | RegisterPage fields | `customer-register.md` | 0.5 | `backend-implement-api`, `backend-database-change` | — |
+| 4.6 | ADMIN notification: cancelled seat re-booked (Firebase) | **none** → run `/clear-spec` first | 0.8, 2.2 | `backend-implement-api`, `backend-database-change`, `frontend-api-pinia-store` | Firebase project/credentials |
 
 ## Claude Instructions
 
@@ -63,7 +64,7 @@ skill (`.claude/skills/spec-review/SKILL.md`) for exactly that case.
    question that covers every open point, then stop. Never invent the business
    rule. Partial work that does not depend on the decision may continue only if
    the user says so.
-4. Task with no design doc (4.1, 4.2) → stop and tell the user to run
+4. Task with no design doc (4.1, 4.2, 4.6) → stop and tell the user to run
    `/clear-spec` first.
 5. **Spec gate.** If this task's `spec` line in the ledger is not ticked, or
    the spec-review doc `.claude/docs/review/<task-id>-<slug>.md` does not exist

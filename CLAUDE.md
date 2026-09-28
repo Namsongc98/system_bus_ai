@@ -169,6 +169,11 @@ Moved here from the former root `AGENTS.md`. Subproject rules live in
 `ticket-system/CLAUDE.md` (backend) and `booking_ticket_vue/CLAUDE.md` (frontend);
 read the matching one before changing code in that subproject.
 
+- Start Claude Code from this `System_bus/` root, with `ticket-system/` and
+  `booking_ticket_vue/` cloned inside it. Hooks, skills, agents, and references
+  only load from here; each subproject repo carries just a minimal
+  `.claude/settings.json` (`.env` deny rules) for sessions started inside it.
+
 - Preserve user changes already present in the workspace.
 - Keep changes scoped to the requested frontend, backend, or `.claude/` area.
 - Do not commit secrets, tokens, credentials, local environment files, or runtime data.
