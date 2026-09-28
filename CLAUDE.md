@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **System Bus** is a Vietnamese bus ticket management system built as a microservices monorepo with:
 - **Frontend:** `booking_ticket_vue/` — Vue 3 SPA
 - **Backend:** `ticket-system/` — Java Spring Boot microservices
-- **Infrastructure:** `ticket-system/Infrastructure/` — Docker-managed MySQL, Kafka, Redis
+- **Infrastructure:** `ticket-system/Infrastructure/` — Docker-managed MySQL, Kafka, Redis, Kong, NGINX TLS.
+  Context per component (topology, contracts, known issues): `.claude/references/infrastructure/README.md`
 
 ---
 
