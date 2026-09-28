@@ -151,15 +151,21 @@ Danh sách `deny` quyền Read/Write với `.env`/`.env.*`, và nối
   - **PostToolUse (Bash)** — cảnh báo nếu lệnh vừa chạy có exit code khác 0,
     kèm gợi ý riêng cho Maven/npm.
   - **UserPromptSubmit** — cảnh báo nếu nội dung prompt trông có vẻ chứa
-    secret.
-  - **Stop** — cảnh báo (không bao giờ chặn) nếu git diff/file chưa track có
-    vẻ chứa secret, và cảnh báo nếu còn `.claude/ledger/*.md` nào chưa tick
-    hết; nếu không thì nhắc Claude báo cáo file đã đổi, lệnh verify đã chạy,
-    check nào bị bỏ qua, và rủi ro còn lại trước khi trả lời cuối.
-  - Tất cả check trừ PreToolUse đều là cảnh báo (fail-open theo thiết kế) —
-    chỉ `PreToolUse` mới thực sự chặn.
-- `test_claude_hook.py` — unit test cho policy (chạy bằng `python3
-  .claude/hooks/test_claude_hook.py`).
+    secret; prompt sạch thì im lặng (stdout của sự kiện này được đưa vào
+    ngữ cảnh của Claude, nên không in dòng "ok").
+  - **Stop** — CHẶN (exit 2, lý do in ra stderr để Claude đọc được) khi git
+    diff/file chưa track có vẻ chứa secret, hoặc khi còn file code/config
+    chưa commit (`.java`, `.vue`, `.js`, `.ts`, `.py`, `.sql`, `.yml`,
+    `.properties`, `pom.xml`, `package.json`): Claude phải chạy verify phù
+    hợp rồi báo cáo file đã đổi, lệnh verify và kết quả, check bị bỏ qua, rủi
+    ro còn lại. Chỉ chặn 1 lần mỗi lượt — khi payload có
+    `stop_hook_active: true` thì cho qua để không lặp vô hạn. Ledger chưa tick
+    hết chỉ cảnh báo, không chặn.
+  - `PreToolUse` và `Stop` chặn; các sự kiện còn lại chỉ cảnh báo
+    (fail-open). Mọi kết quả `block` in ra stderr, còn lại in ra stdout.
+- `test_claude_hook.py` — unit test cho policy, gồm cả test chạy script như
+  Claude Code (exit code + stdout/stderr). Chạy bằng `python3
+  .claude/hooks/test_claude_hook.py`.
 
 ### `.claude/agents/` — [agent]
 5 subagent chỉ-đọc (`tools: Read, Grep, Glob` — không sửa file), được

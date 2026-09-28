@@ -90,6 +90,8 @@ DIFF_SCAN_EXCLUDES = {
     "Infrastructure/redis-cluster/data",
 }
 MAX_UNTRACKED_SECRET_SCAN_BYTES = 1_000_000
+CODE_CHANGE_SUFFIXES = {".java", ".vue", ".js", ".ts", ".py", ".sql", ".yml", ".yaml", ".properties"}
+CODE_CHANGE_NAMES = {"pom.xml", "package.json"}
 
 
 def resolve_project_root() -> Path:
@@ -360,10 +362,16 @@ def scan_git_diff(root: Path, diff_override: str | None = None) -> list[dict[str
 
 
 def emit(level: str, message: str, details: dict[str, Any] | None = None) -> None:
+    """Print a hook result.
+
+    Claude Code only feeds stderr back to Claude when a hook exits with code 2,
+    so blocking results go to stderr; everything else stays on stdout.
+    """
     payload = {"level": level, "message": message}
     if details:
         payload["details"] = details
-    print(json.dumps(payload, ensure_ascii=True))
+    stream = sys.stderr if level == "block" else sys.stdout
+    print(json.dumps(payload, ensure_ascii=True), file=stream)
 
 
 def handle_pre_tool_use(args: argparse.Namespace, payload: dict[str, Any], root: Path) -> int:
@@ -397,7 +405,7 @@ def handle_user_prompt_submit(args: argparse.Namespace, payload: dict[str, Any])
     if findings:
         emit("warn", "Prompt may contain secret material. Remove or redact it before continuing.", {"types": findings})
         return 0
-    emit("ok", "Prompt passed basic secret scan.")
+    # UserPromptSubmit stdout is added to Claude's context; stay silent when clean.
     return 0
 
 
@@ -434,15 +442,51 @@ def scan_open_ledger_items(root: Path) -> list[dict[str, Any]]:
     return findings
 
 
-def handle_stop(args: argparse.Namespace, _: dict[str, Any], root: Path) -> int:
+def is_code_change_path(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    if should_skip_diff_path(normalized):
+        return False
+    name = normalized.rsplit("/", 1)[-1]
+    return name in CODE_CHANGE_NAMES or Path(name).suffix in CODE_CHANGE_SUFFIXES
+
+
+def changed_code_files(root: Path, override: str | None = None) -> list[str]:
+    """Uncommitted code/config files (staged, unstaged, untracked) across the repos."""
+    if override is not None:
+        return [path for path in override.split(",") if path and is_code_change_path(path)]
+    changed: list[str] = []
+    for repository in discover_git_repositories(root):
+        output = run_git(repository, "status", "--porcelain", "--untracked-files=all")
+        for line in output.splitlines():
+            path = line[3:].split(" -> ")[-1].strip('"')
+            if is_code_change_path(path):
+                changed.append(f"{repository.name}/{path}")
+    return changed
+
+
+def handle_stop(args: argparse.Namespace, payload: dict[str, Any], root: Path) -> int:
+    # Claude is already continuing because of an earlier Stop block: never loop.
+    if payload.get("stop_hook_active") is True:
+        return 0
     findings = scan_git_diff(root, args.dry_run_diff)
     if findings:
         emit(
-            "warn",
-            "Git diff may contain secret material. Remove it and rotate any exposed credential before committing.",
+            "block",
+            "Git diff may contain secret material. Remove it and tell the user to rotate any exposed credential before committing.",
             {"findings": findings},
         )
-        return 0
+        return 2
+    changed = changed_code_files(root, args.dry_run_changed)
+    if changed:
+        emit(
+            "block",
+            "Uncommitted code changes exist. Before finishing, run the matching verification "
+            "(mvn test for ticket-system, npm run test:unit / npm run build for booking_ticket_vue, "
+            "python3 -m unittest for .claude/hooks) unless already run after the last edit, then report "
+            "changed files, verification commands with results, skipped checks, and remaining risks.",
+            {"changed_files": changed[:20], "total": len(changed)},
+        )
+        return 2
     ledger_findings = scan_open_ledger_items(root)
     if ledger_findings:
         emit(
@@ -463,6 +507,7 @@ def main() -> int:
     parser.add_argument("--dry-run-reason")
     parser.add_argument("--dry-run-status")
     parser.add_argument("--dry-run-diff")
+    parser.add_argument("--dry-run-changed", help="Comma-separated changed paths for the Stop hook.")
     args = parser.parse_args()
 
     root = resolve_project_root()
