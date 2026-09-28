@@ -21,7 +21,7 @@
 
 | Khối | Field hiển thị | Map với entity |
 |---|---|---|
-| Bus Card | biển số, sức chứa, trạng thái, driver gắn kèm | `Buses.plateNumber`, `.capacity`, `.status` (`BusStatus`: ACTIVE/INACTIVE/PENDING), driver là quan hệ riêng — **chưa thấy field liên kết Bus↔Driver ở entity `Buses`/`Trip`** (driver hiện chỉ gắn ở `Trip.driver`, không gắn cố định vào `Buses`) |
+| Bus Card | biển số, sức chứa, trạng thái, driver gắn kèm | `Buses.plateNumber`, `.capacity`, `.status` (`BusStatus`: AVAILABLE/IN_USE/MAINTENANCE — đổi từ ACTIVE/INACTIVE/PENDING theo spec review 1.1 D1), driver là quan hệ riêng — **chưa thấy field liên kết Bus↔Driver ở entity `Buses`/`Trip`** (driver hiện chỉ gắn ở `Trip.driver`, không gắn cố định vào `Buses`) |
 | Route Card | tên tuyến, điểm đầu/cuối, khoảng cách, trạng thái | `Route.routeName`, `.startPoint`, `.endPoint`, `.distanceKm`, `.status` (`RouteStatus`: ACTIVE/INACTIVE) |
 | Nút "Add" (Bus/Route) | mở modal tương ứng | xem `admin-create-bus-modal.md` / `admin-create-route-modal.md` |
 | Nút hành động trên card | sửa/xoá (icon button) | sửa → mở modal edit (`PUT`); xoá → xem `admin-delete-confirmation.md` |

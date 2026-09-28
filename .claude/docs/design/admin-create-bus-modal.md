@@ -14,7 +14,7 @@ Modal tạo/sửa xe — form gọn, khớp gần đúng với `BusRequest`. Có
 - `Header`: tiêu đề + nút đóng.
 - `Content Area`:
   - `Bus Preview Card`: ảnh minh hoạ xe (placeholder).
-  - `Form Fields`: Plate Number, Status Segmented Control (3 nút — ACTIVE/INACTIVE/PENDING), Capacity
+  - `Form Fields`: Plate Number, Status Segmented Control (AVAILABLE/IN_USE/MAINTENANCE — admin chỉ chọn AVAILABLE/MAINTENANCE; IN_USE do hệ thống đặt khi xe được gán chuyến, chỉ hiển thị), Capacity
     Slider & input.
   - `Seat Visualization`: sơ đồ ghế minh hoạ theo `capacity` nhập vào (chỉ để xem trước, không phải
     sơ đồ ghế thật dùng khi bán vé).
@@ -25,7 +25,7 @@ Modal tạo/sửa xe — form gọn, khớp gần đúng với `BusRequest`. Có
 | Field | Loại | Placeholder (Figma) | Map (`BusRequest`) | Validate |
 |---|---|---|---|---|
 | Plate Number | text | "FV-0000-XX" | `plateNumber` | required, unique (chưa xác nhận backend có check unique không) |
-| Operational Status | segmented control (3 nút) | — | `status` — **lưu ý: `BusRequest.status` là kiểu `String`, không phải enum `BusStatus`** → FE phải tự đảm bảo gửi đúng 1 trong 3 giá trị `ACTIVE`/`INACTIVE`/`PENDING`, backend không validate enum ở tầng DTO | required |
+| Operational Status | segmented control (3 nút) | — | `status` — enum `BusStatus` (`AVAILABLE`/`IN_USE`/`MAINTENANCE`, spec review 1.1 D1); BE validate enum ở DTO (sai → 400), admin gửi `IN_USE` → 400 | required |
 | Capacity | slider + input số | — | `capacity` | required, > 0, số nguyên |
 | Seat Visualization | read-only, tính từ Capacity | — | — | chỉ hiển thị minh hoạ, không gửi lên server |
 
