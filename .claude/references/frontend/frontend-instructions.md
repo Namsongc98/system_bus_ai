@@ -40,7 +40,7 @@ For the real per-screen API reference (which button calls which endpoint, ground
 
 - Service files live in `src/services/` and export plain service objects.
 - Service methods map to backend endpoints using `API_ENDPOINTS`.
-- Services use `apiClient` or the appropriate exported client from `src/services/axios.js`.
+- Services use `apiClient`, the only client (default export of `src/services/axios.js`).
 - Services do not hold state, import stores, navigate routes, or show UI feedback.
 - The shared Axios response interceptor returns the full Axios response on success and rejects with normalized backend error data when available.
 
