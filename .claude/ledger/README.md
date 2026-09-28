@@ -34,9 +34,10 @@ ledger; use the slash commands directly.
    `task/<ID>-<slug>`: `booking_ticket_vue` after FE unit tests, `ticket-system`
    after BE unit tests, then the root docs repo without tests, then pushes those branches to
    origin, never force), after which the user may tick.
-6. The `Stop` hook (`.claude/hooks/claude_hook.py`) automatically warns
-   (without blocking) if any ledger still has an unticked line when Claude is
-   about to end the turn — a reminder only, it never blocks the session.
+6. The `Stop` hook (`.claude/hooks/claude_hook.py`) warns (without blocking)
+   if any ledger still has an unticked line when Claude is about to end the
+   turn. It does block once per turn for secrets in the diff or uncommitted
+   code changes that still need verification — never for ledger state.
 
 ## Conventions
 

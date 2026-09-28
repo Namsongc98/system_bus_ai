@@ -92,5 +92,63 @@ class ClaudeHookSecretPolicyTest(unittest.TestCase):
         self.assertEqual(findings[0]["open_items"], 1)
 
 
+class ClaudeHookCliTest(unittest.TestCase):
+    """Run the script the way Claude Code does: exit code plus stdout/stderr."""
+
+    def run_hook(self, event, *extra, payload=""):
+        import subprocess
+        import sys
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            return subprocess.run(
+                [sys.executable, str(SCRIPT), "--event", event, *extra],
+                input=payload,
+                capture_output=True,
+                text=True,
+                cwd=tmp,
+                check=False,
+            )
+
+    def test_blocked_command_reason_goes_to_stderr(self):
+        result = self.run_hook("PreToolUse", "--dry-run-command", "git push --force origin main")
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("force_push", result.stderr)
+        self.assertEqual(result.stdout, "")
+
+    def test_clean_prompt_adds_no_context(self):
+        result = self.run_hook("UserPromptSubmit", "--dry-run-prompt", "review the booking flow")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+
+    def test_stop_blocks_on_secret_in_diff(self):
+        # Built at runtime so this file does not itself trip the secret scan.
+        diff = "+++ b/src/main/resources/application.yml\n+jwt." + "secret: " + "abcdefgh" * 2 + "\n"
+        result = self.run_hook("Stop", "--dry-run-diff", diff, "--dry-run-changed", "")
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("secret", result.stderr)
+
+    def test_stop_blocks_once_on_uncommitted_code_changes(self):
+        changed = "ticket-system/booking_ticket/src/Foo.java,booking_ticket_vue/README.md"
+        first = self.run_hook("Stop", "--dry-run-diff", "", "--dry-run-changed", changed)
+        again = self.run_hook(
+            "Stop", "--dry-run-diff", "", "--dry-run-changed", changed,
+            payload='{"stop_hook_active": true}',
+        )
+
+        self.assertEqual(first.returncode, 2)
+        self.assertIn("Foo.java", first.stderr)
+        self.assertNotIn("README.md", first.stderr)
+        self.assertEqual(again.returncode, 0)
+
+    def test_stop_allows_docs_only_changes(self):
+        result = self.run_hook("Stop", "--dry-run-diff", "", "--dry-run-changed", ".claude/docs/report/x.md")
+
+        self.assertEqual(result.returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
