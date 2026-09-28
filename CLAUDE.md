@@ -53,7 +53,7 @@ mvn -f manage-revenue-ticket/pom.xml -Dtest=ClassName test
 ```bash
 # Create networks
 docker network create ticket-system-network
-docker network create redis-cluster-net --subnet=173.20.0.0/16
+docker network create redis-cluster-net --subnet=172.30.0.0/16
 
 # Start in order
 cd ticket-system/Infrastructure/mysql && docker-compose up -d && cd ../../..
@@ -62,8 +62,8 @@ cd ticket-system/Infrastructure/redis-cluster && docker-compose up -d
 
 # Initialize Redis cluster (one-time)
 docker exec -it redis-1 redis-cli --cluster create \
-  173.20.0.11:7001 173.20.0.12:7002 173.20.0.13:7003 \
-  173.20.0.14:7004 173.20.0.15:7005 173.20.0.16:7006 \
+  172.30.0.11:7001 172.30.0.12:7002 172.30.0.13:7003 \
+  172.30.0.14:7004 172.30.0.15:7005 172.30.0.16:7006 \
   --cluster-replicas 1
 
 # Verify services
