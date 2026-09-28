@@ -2,7 +2,7 @@
 
 > Màn hình: [`.claude/docs/design/admin-trips-management.md`](../../../../docs/design/admin-trips-management.md)
 >
-> **Cập nhật task 0.2 (2026-09-21):** `API_ENDPOINTS` đã đổi `/buses`→`/bus`, `/routes`→`/route`, `/trips`→`/trip` (`BASE`, `BY_ID`), `/tickets`→`/ticket` (`BASE`). Các bảng "FE hiện tại" bên dưới ghi path **trước** 0.2; lỗi lệch số ít/nhiều đã hết, lỗi thiếu endpoint BE vẫn còn (giờ trả 405 thay vì 404). Xem `.claude/docs/review/0.2-api-endpoints.md`.
+> **Cập nhật task 0.2 (2026-09-28):** `API_ENDPOINTS` đã đổi `/buses`→`/bus`, `/routes`→`/route`, `/trips`→`/trip` (`BASE`, `BY_ID`), `/tickets`→`/ticket` (`BASE`), `/base-salary`→`/base_salary`. Các bảng "FE hiện tại" bên dưới ghi path **trước** 0.2; lỗi lệch số ít/nhiều đã hết, lỗi thiếu endpoint BE vẫn còn (giờ trả 405 thay vì 404). Xem `.claude/docs/review/0.2-api-endpoints.md`.
 >
 > Backend thật: [`references/backend/api/admin-trips-management/endpoints.md`](../../../backend/api/admin-trips-management/endpoints.md)
 > Quy ước chung: [`../_conventions.md`](../_conventions.md)
