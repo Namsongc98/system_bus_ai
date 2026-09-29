@@ -68,11 +68,11 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] lead-review
 
 ## 1.2 — admin/UserManagement
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 1.3 — admin/TripsManagement
 - [ ] spec
