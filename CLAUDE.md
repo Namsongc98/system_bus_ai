@@ -129,8 +129,8 @@ Controller (thin: validate + delegate)
 ### Key Statuses
 
 - **Trip:** `SCHEDULED → ONGOING → COMPLETED | CANCELLED`
-- **Ticket:** `NOT_BOOKED → BOOKED → PAID | CANCELLED`
-- **Bus:** `AVAILABLE`, `IN_USE`, `MAINTENANCE`
+- **Ticket:** `NOT_BOOKED`, `PENDING`, `SUCCESS`, `CANCELLED` (`TicketStatus`)
+- **Bus:** `AVAILABLE`, `IN_USE` (set by the system when a trip is created), `MAINTENANCE` (V3 migration, task 1.1)
 
 ---
 
