@@ -75,11 +75,11 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] lead-review
 
 ## 1.3 — admin/TripsManagement
-- [ ] spec
-- [ ] implement
-- [ ] test
-- [ ] review
-- [ ] lead-review
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
 
 ## 2.1 — user/TripView
 - [ ] spec
@@ -152,6 +152,13 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [ ] lead-review
 
 ## 4.6 — ADMIN notification: cancelled seat re-booked (Firebase)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 5.1 — Hardening (B18 rest, B37 c, B35 c/e/f/g, B37 e)
 - [ ] spec
 - [ ] implement
 - [ ] test

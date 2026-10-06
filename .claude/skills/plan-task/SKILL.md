@@ -47,6 +47,7 @@ Plan task:
 | 4.4 | Salary | — | — | — | deferred: no screen exists |
 | 4.5 | RegisterPage fields | `customer-register.md` | 0.5 | `backend-implement-api`, `backend-database-change` | — |
 | 4.6 | ADMIN notification: cancelled seat re-booked (Firebase) | **none** → run `/clear-spec` first | 0.8, 2.2 | `backend-implement-api`, `backend-database-change`, `frontend-api-pinia-store` | Firebase project/credentials |
+| 5.1 | Hardening: B18 rest, B37 c, B35 c/e/f/g, B37 e (plan Phase 5) | — (no screen; DoD in plan) | 2.2, 2.3, 2.4 | `backend-implement-api`, `frontend-api-pinia-store` | API time zone (plan §3) |
 
 ## Claude Instructions
 
