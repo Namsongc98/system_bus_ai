@@ -42,7 +42,7 @@ Important entities include:
 - Keep migrations immutable after they have been applied to a shared environment. Add a new migration for corrections.
 - `manage-revenue-ticket` uses Flyway: files live in `src/main/resources/db/migration/` and are named `V<n>__<description>.sql` (integer version, two underscores). Never edit an applied file; every schema change is a new file.
 - Only `manage-revenue-ticket` runs migrations. `booking_ticket` shares the database and only runs Hibernate `validate`, so start `manage-revenue-ticket` first.
-- `application-prod.properties` sets `baseline-on-migrate=true` (`baseline-version=1`) for the existing production database. Local databases are not baselined: recreate them from V1.
+- `manage-revenue-ticket/application.properties` sets `baseline-on-migrate=true`, `baseline-version=1` and `clean-disabled=true` for every environment (0.3, decision 1 = A). A database built by the old `ddl-auto=update` (tables, no `flyway_schema_history`) is marked V1 with its rows kept, then only V2+ run; an empty database gets V1 like a new install. Baseline accepts any non-empty schema, so check that `DB_URL` names `quan-ly-ban-hang` (single-DB project, 0.3 L7 = a). Never drop or recreate a database that holds data to "fix" Flyway; back it up (`mysqldump --single-transaction`) before migrating real data.
 - Include constraints, indexes, defaults, and data backfills required by the application change.
 - Plan backward-compatible expand/migrate/contract steps when old and new application versions may overlap.
 
