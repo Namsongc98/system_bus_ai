@@ -72,6 +72,76 @@ class ClaudeHookSecretPolicyTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual([], self.reasons(command))
 
+    def test_blocks_dotenv_globs_and_environment_readers(self):
+        commands = {
+            "find . -name '.env*' -exec cat {} +": "dotenv_file_access",
+            "cat .e*": "dotenv_file_access",
+            "cat /proc/self/environ": "environment_dump",
+            "set": "environment_dump",
+            "python3 -c 'import os;print(os.environ)'": "environment_dump",
+            "node -e 'console.log(process.env)'": "environment_dump",
+        }
+
+        for command, reason in commands.items():
+            with self.subTest(command=command):
+                self.assertIn(reason, self.reasons(command))
+
+    def test_blocks_bash_writes_to_guard_and_secret_files(self):
+        commands = [
+            "echo x > .claude/settings.json",
+            "echo x >> .claude/hooks/claude_hook.py",
+            "tee .claude/settings.local.json",
+            "sed -i '' s/a/b/ .claude/hooks/claude_hook.py",
+            "cp /tmp/x .claude/hooks/claude_hook.py",
+            "ls; mv .claude/settings.json /tmp/s",
+            "git checkout -- .claude/hooks/claude_hook.py",
+            "git diff --output=.claude/settings.json",
+            "python3 -c \"open('.claude/settings.json','w').write('{}')\"",
+        ]
+
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertIn("protected_path_write", self.reasons(command))
+
+    def test_allows_main_session_reads_and_repo_writes(self):
+        commands = [
+            "sed -n 1,20p .claude/hooks/claude_hook.py",
+            "python3 .claude/hooks/claude_hook.py --event PreToolUse --dry-run-command 'echo x > out.txt'",
+            "git add -- .claude/hooks/claude_hook.py",
+            "git -C ticket-system commit -F - <<'EOF'\nmessage with a user's quote\nEOF",
+            "cat >> CLAUDE.md <<'EOF'\nsee .claude/hooks/claude_hook.py > it's fine\nEOF",
+            "echo x > out.txt",
+            "grep -rn 'process.env' booking_ticket_vue/src",
+        ]
+
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertEqual([], self.reasons(command))
+
+    def test_read_only_agents_get_an_allowlist(self):
+        blocked = [
+            "echo x > out.txt", "echo x | tee out.txt", "sed -i '' s/a/b/ f.txt",
+            "git diff --output=o.txt", "git checkout -- .", "git commit -am x", "git stash",
+            "git stash pop", "git branch new-branch", "git remote add x y", "git worktree add ../w",
+            "curl http://x", "docker ps", "mvn clean install", "npm install",
+            "find . -exec rm {} +", "cat x $(rm f)", "cat a\nrm b", "python3 -c 'print(1)'",
+        ]
+        allowed = [
+            "git -C ticket-system diff -- f", "git grep -o foo", "grep -rn foo .claude",
+            "sed -n 1,20p f", "find . -name '*.java'", "cat f | head -5", "ls 2>/dev/null",
+            "git stash list", "git branch --show-current", "git remote get-url origin", "git worktree list",
+            "mvn -B -f ticket-system/pom.xml -pl manage-revenue-ticket -am "
+            "-Dtest=AvatarServiceTest#upload -Dsurefire.failIfNoSpecifiedTests=false test",
+            "npm --prefix booking_ticket_vue run test:unit -- --run src/x.spec.js",
+        ]
+
+        for command in blocked:
+            with self.subTest(blocked=command):
+                self.assertNotEqual([], MODULE.read_only_agent_reasons(command, self.root))
+        for command in allowed:
+            with self.subTest(allowed=command):
+                self.assertEqual([], MODULE.read_only_agent_reasons(command, self.root))
+
     def test_scan_open_ledger_items_ignores_readme_and_template(self):
         import tempfile
 
@@ -116,6 +186,26 @@ class ClaudeHookCliTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("force_push", result.stderr)
         self.assertEqual(result.stdout, "")
+
+    def test_read_only_layer_applies_only_to_read_only_subagents(self):
+        import json
+
+        def payload(agent_type):
+            data = {"tool_name": "Bash", "tool_input": {"command": "git commit -am x"}}
+            if agent_type:
+                data["agent_type"] = agent_type
+            return json.dumps(data)
+
+        main = self.run_hook("PreToolUse", payload=payload(None))
+        verifier = self.run_hook("PreToolUse", payload=payload("finding-verifier"))
+        plugin_reviewer = self.run_hook("PreToolUse", payload=payload("system-bus-dev:backend-reviewer"))
+        general = self.run_hook("PreToolUse", payload=payload("general-purpose"))
+
+        self.assertEqual(main.returncode, 0)
+        self.assertEqual(verifier.returncode, 2)
+        self.assertIn("read_only_agent_git_write:commit", verifier.stderr)
+        self.assertEqual(plugin_reviewer.returncode, 2)
+        self.assertEqual(general.returncode, 0)
 
     def test_clean_prompt_adds_no_context(self):
         result = self.run_hook("UserPromptSubmit", "--dry-run-prompt", "review the booking flow")

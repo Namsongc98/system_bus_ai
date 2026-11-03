@@ -58,8 +58,9 @@ rồi mới sửa code — không để 2 bên lệch nhau.
         |                            frontend-api-pinia-store
         v
  [2] Review tự động --------------- backend-review, frontend-code-review, hoặc parallel-review
-        |                            (gọi các subagent backend-reviewer / frontend-reviewer /
-        |                             security-reviewer / test-gap-reviewer, chỉ đọc)
+        |                            (/parallel-review = skill review-pipeline: chọn reviewer theo file đổi,
+        |                             chạy song song, finding-verifier xác nhận/bác từng lỗi high/medium,
+        |                             lưu .claude/docs/review/_workspace/<ID>/round-<N>/03_main_summary.md)
         v
  [3] /make-testcase --------------- file Excel test case tại .claude/docs/testcase/ (tùy chọn, cho QA)
         |
@@ -144,7 +145,19 @@ Danh sách `deny` quyền Read/Write với `.env`/`.env.*`, và nối
     worktree không quản lý, xóa trực tiếp branch/ref) và giờ còn chặn cả
     truy cập dotenv/biến môi trường nhạy cảm: đọc file `.env`/`.env.*`, dump
     môi trường (`env`, `printenv`, `export -p`, `declare -x`), hoặc tham
-    chiếu `$JWT_*`/`$DB_*`/`$MAIL_*`/`$MINIO_*` trong 1 lệnh.
+    chiếu `$JWT_*`/`$DB_*`/`$MAIL_*`/`$MINIO_*` trong 1 lệnh. Từ 2026-11-03
+    chặn thêm: glob `.env*`/`.e*`, `/proc/*/environ`, `set` trơn,
+    `python -c`/`node -e` đọc `os.environ`/`process.env`; Bash ghi/xoá/ghi đè
+    `.claude/hooks/**`, `.claude/settings*.json`, `.env*` (redirect, `tee`,
+    `sed -i`, `cp`/`mv`/`rm`, `git checkout|restore --`, `--output`,
+    `python -c open()`) — sửa các file này bằng Edit (có hỏi quyền). Subagent
+    chỉ-đọc (5 reviewer, `finding-verifier`, Explore, Plan — nhận theo
+    `agent_type` trong payload) chỉ được chạy allowlist: git đọc (status, diff,
+    log, show, `stash list`, `branch --show-current`...), grep/find (không
+    `-exec`/`-delete`)/cat/sed -n, `mvn ... test` (không clean/install/
+    spring-boot), `npm run test:unit`, script hook/scan; mọi redirect ghi file,
+    git write, mạng, Docker, `$(...)` đều bị chặn. Lưu ý: rule secret quét cả
+    nội dung heredoc, nên ghi doc nhắc tới các chuỗi này bằng Edit/Write.
   - **PermissionRequest (Bash)** — chỉ cảnh báo (không chặn) nếu lý do xin
     quyền ngắn hơn 12 ký tự hoặc nghe quá rộng ("anything", "full access",
     "bypass"...).
@@ -168,9 +181,11 @@ Danh sách `deny` quyền Read/Write với `.env`/`.env.*`, và nối
   .claude/hooks/test_claude_hook.py`.
 
 ### `.claude/agents/` — [agent]
-5 subagent chỉ-đọc (`tools: Read, Grep, Glob` — không sửa file), được
-`parallel-review` (hoặc 1 command `*-review` cụ thể) triệu hồi, không bao
-giờ tự ý hoạt động:
+6 subagent không sửa code/doc, được skill `review-pipeline` (qua `/parallel-review`)
+triệu hồi, không bao giờ tự ý hoạt động. 5 reviewer chỉ có `Read, Grep, Glob`;
+`finding-verifier` có thêm `Bash` để chạy test hẹp (chỉ sinh build output như
+`target/`); hook áp allowlist lệnh chỉ-đọc cho cả 6 agent (xem mục hooks). Model ghi kèm lý do trong
+từng file (`opus` cho backend/security/verifier, `sonnet` cho phần còn lại):
 - `backend-reviewer` — API Spring Boot, security, transaction, tính nhất
   quán dữ liệu, Redis/Kafka, test còn thiếu.
 - `frontend-reviewer` — Vue, Pinia, Axios, routing, accessibility, Tailwind,
@@ -181,6 +196,9 @@ giờ tự ý hoạt động:
 - `config-reviewer` — sự nhất quán của `CLAUDE.md`, chính `.claude/` (tham
   chiếu cũ, link markdown hỏng, skill trùng lặp, hook quá nguy hiểm/chậm,
   subagent được phép sửa file, roadmap bị lệch).
+- `finding-verifier` — đọc code + chạy test liên quan để xác nhận (`confirmed`),
+  bác (`refuted`) hoặc để ngỏ (`uncertain`) từng finding high/medium trước khi
+  `/lead-review` xếp loại `FIX`.
 
 ### `.claude/commands/` — [command]
 Các template lệnh mỏng (front-matter + template yêu cầu + hướng dẫn cho
@@ -204,7 +222,7 @@ Claude), liệt kê theo phạm vi:
 | `/lead-review-fix` | Sửa các lỗi `FIX` mà `/lead-review` ghi lại, verify + review lại, rồi trả về `/lead-review`. Thường không cần gõ: `/plan-task <ID>` tự chuyển sang bước này khi còn lỗi mở. |
 | `/make-testcase` | Xuất 1 file Excel test case vào `.claude/docs/testcase/` từ tài liệu clear-spec. |
 | `/page-api-review` | Review 1 trang Vue về mức độ sẵn sàng API, khớp hợp đồng FE-BE. |
-| `/parallel-review` | Chạy đồng thời 4 subagent backend/frontend/security/test-gap. |
+| `/parallel-review` | Điểm vào của skill `review-pipeline`: reviewer song song theo file đổi → `finding-verifier` → bản tóm tắt đã kiểm chứng cho `/lead-review`. |
 | `/reuse-component` | Tạo/điền/refactor 1 component Base/Common tái sử dụng từ HTML Figma. |
 | `/review-hooks` | Review thiết kế hook, rủi ro chính sách, mô hình tin cậy, kế hoạch verify. |
 
@@ -240,6 +258,7 @@ Các workflow đóng gói sẵn mà Claude tự khớp với task qua phần `de
 | `git-commit` | Giống `/git-commit` — FE (test rồi commit) → BE (test rồi commit) → repo gốc (commit, không test), rồi push nhánh task lên origin; dừng nếu test đỏ hoặc remote đã lệch, không bao giờ force. |
 | `lead-review-fix` | Giống `/lead-review-fix` — sửa đúng các lỗi `FIX` trong mục `7. Lead review` của `<ID>-<slug>.md`, `DEFER` thành blocker `B<n>`, `NEEDS-USER` để bạn quyết. |
 | `spec-review` | Giống `/spec-review` (xem mục command) — gọi được qua Skill tool ở các surface không load `.claude/commands/`. |
+| `review-pipeline` | Orchestrator review: chọn reviewer theo file đổi, chạy song song, lưu finding vào `.claude/docs/review/_workspace/<ID>/round-<N>/` (git-ignore), `finding-verifier` kiểm chứng high/medium, ghi `03_main_summary.md`; chạy lại được từng phần ("chỉ security", "verify lại R3"). |
 
 ### `.claude/references/` — [reference]
 Kiến thức domain thụ động, được skill/command/agent đọc khi cần — tự nó
@@ -346,7 +365,7 @@ không bao giờ tự đánh dấu 1 work-unit là xong thay bạn.
    Frontend: `frontend-figma-to-vue` / `integrate-component` cho trang, rồi
    `frontend-integrate-api` / `frontend-api-pinia-store` /
    `frontend-wire-api-to-event` để nối vào.
-5. `/parallel-review` — triệu hồi 4 subagent review; sửa các finding.
+5. `/parallel-review` — reviewer song song + `finding-verifier`; sửa các finding `confirmed`.
 6. `/make-testcase` — tùy chọn, nếu QA cần 1 file Excel.
 7. `/lead-review` — Claude tổng hợp; bạn xác nhận và tick `lead-review`
    trong ledger.

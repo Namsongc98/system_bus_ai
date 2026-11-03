@@ -3,5 +3,6 @@ ticket-system/
 .DS_Store
 .claude/worktrees/
 .claude/settings.local.json
+.claude/docs/review/_workspace/
 /dist/
 __pycache__/

@@ -199,3 +199,18 @@ Detailed docs live in `ticket-system/.github/`:
 - `PROJECT_INSTRUCTIONS.md` — Full architecture, DB schema, configuration reference
 - `API_DOCUMENTATION.md` — REST API reference
 - `QUICK_START.md` — Minimal setup guide
+
+---
+
+## Harness: System_bus task delivery
+
+**Goal:** Take one screen-feature-plan task from spec to pushed branch with independent, verified review and human gates.
+
+**Invocation condition:** The flow is `/spec-review` → `/plan-task` → `/parallel-review` → `/lead-review` → `/git-commit` (`.claude/VIBE_CODE_INSTRUCTIONS.md`). When asked to review a change with several reviewers, re-run or partly re-run a review, or re-verify findings, use the `review-pipeline` skill. Simple questions can be answered directly.
+
+**Change history:**
+| Date | Change | Target | Reason |
+| --- | --- | --- | --- |
+| 2026-11-03 | Harness v2: `review-pipeline` orchestrator, `finding-verifier` agent, findings saved under `.claude/docs/review/_workspace/`, `/lead-review` reads the verified summary; `backend-reviewer` and `security-reviewer` → opus | `skills/review-pipeline`, `agents/`, `commands/parallel-review.md`, `commands/lead-review.md` | 0.3 needed 3 rounds: findings were lost after context compaction and unverified findings led to fixes that created new defects |
+| 2026-11-03 | Dry run on the harness itself: redaction rule + `scan_workspace.py`, untrusted "How to check", lead-review stops instead of self-starting the review, accurate read-only wording | `skills/review-pipeline`, `agents/`, `commands/lead-review.md` | 6 confirmed findings from the first `review-pipeline` run (1 refuted by `finding-verifier`) |
+| 2026-11-03 | Hook hardening: dotenv globs and env readers blocked; Bash cannot change `.claude/hooks/**`, `.claude/settings*.json`, `.env*`; read-only subagents (by `agent_type`) get a command allowlist | `.claude/hooks/claude_hook.py`, `test_claude_hook.py` | Review findings R1, R2, R4: verifier limits were prompt-only; user asked to enforce them |

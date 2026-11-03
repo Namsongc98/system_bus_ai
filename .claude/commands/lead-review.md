@@ -6,7 +6,7 @@ allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Skill
 
 # Prompt: Lead Review (human sign-off gate)
 
-Use this after `parallel-review` (or `backend-review` / `frontend-code-review`)
+Use this after `/parallel-review` (or `backend-review` / `frontend-code-review`)
 has already run. This command does **not** replace automated review — it
 consolidates it, records what is still wrong, and either sends the work back
 for fixing or asks the user to confirm.
@@ -29,12 +29,18 @@ Lead review for:
 
 ## Claude Instructions
 
-1. Re-read the latest findings from `backend-reviewer` / `frontend-reviewer` /
-   `security-reviewer` / `test-gap-reviewer` for this change (rerun
-   `parallel-review` if no recent findings exist). If only a self-applied
-   checklist (`backend-code-review` / `frontend-code-review`) has run on a
-   security- or auth-related change, record "no independent review" as a `FIX`
-   finding.
+1. Read the verified review summary
+   `.claude/docs/review/_workspace/<ID>/round-<N>/03_main_summary.md`, where
+   `<N>` is this lead-review round (written by `/parallel-review`, skill
+   `review-pipeline`). If it is missing, or older than the latest code change
+   for this task, stop and tell the user to run `/parallel-review <ID>` first
+   (see Boundaries). Use its verdicts: rows `confirmed` are candidate
+   `FIX`/`DEFER`; `uncertain` rows you judge yourself with evidence, `high`
+   ones first; `refuted` rows are not `FIX` unless you find new evidence;
+   `Missing:` reviewers mean the review is incomplete — say so. If only a
+   self-applied checklist (`backend-code-review` / `frontend-code-review`) has
+   run on a security- or auth-related change, record "no independent review" as
+   a `FIX` finding.
 2. If a ledger file is referenced, read it and report the current checklist
    state for this work-unit (`spec / implement / test / review / lead-review`).
 3. Re-run the build/test commands for the touched modules and use today's
@@ -103,5 +109,6 @@ Lead review for:
 - Never commit or push from this command — committing starts only when the
   user runs `/git-commit <ID>`.
 - Never tick `lead-review` and never claim the work-unit is done.
-- If no automated review has run yet, say so and stop — do not review from
-  scratch inside this command.
+- If no automated review has run yet (no `03_main_summary.md` for this
+  round), say so and stop — do not review from scratch and do not start
+  `/parallel-review` from inside this command.
