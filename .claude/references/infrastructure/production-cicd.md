@@ -1,7 +1,7 @@
 # Production & CI/CD
 
 Index: [README.md](README.md) · Nguồn: `DEPLOYMENT.md` (root), `Infrastructure/docker-compose.prod.override.yml`,
-`ticket-system/.github/workflows/ci-cd.yml`
+`ticket-system/.github/workflows/ci-cd.yml`, `booking_ticket_vue/.github/workflows/ci.yml`
 
 ## Mô hình triển khai
 
@@ -9,7 +9,7 @@ Index: [README.md](README.md) · Nguồn: `DEPLOYMENT.md` (root), `Infrastructur
 |---|---|
 | Backend + toàn bộ hạ tầng | VM1 Oracle Always Free (Ampere A1, ~6GB RAM), tất cả bằng Docker, chế độ container + `tls/` |
 | K8s sandbox | VM2 k3s riêng — xem [k8s-sandbox.md](k8s-sandbox.md) |
-| Frontend | Vercel Git integration; chỉ set `VITE_KONG_API_URL=https://<domain>/api` |
+| Frontend | Cloudflare Pages Git integration (đổi từ Vercel 2026-10-28) — runbook ở mục "CD frontend" bên dưới |
 | Image | GHCR `ghcr.io/<owner>/ticket-system-<module>:latest` |
 | MySQL | container trên VM1 (không managed DB) |
 | MinIO | **chưa có** compose — cần xác nhận trước khi deploy |
@@ -41,7 +41,52 @@ graph LR
 
 Secret GitHub: `VM1_HOST`, `VM1_USER`, `VM1_SSH_KEY` (+ `GITHUB_TOKEN` cho GHCR).
 Không trigger `pull_request`, không kiểm compose/Kong, không buildx cache (B27b, B27c). Đổi `Infrastructure/**`
-không kích hoạt CI.
+không kích hoạt CI. Sửa ở task **6.2b** (sau khi có VM) — scope đã kiểm trong
+`.claude/docs/review/6.2-ci-cd-frontend.md` mục 4. Trong lúc chờ: merge `develop` → `main` vẫn chạy `build-push` +
+`deploy-vm1`, job deploy đỏ (thiếu secret `VM1_*`, lỗi override bên dưới).
+
+## CI frontend (`booking_ticket_vue/.github/workflows/ci.yml`, task 6.2)
+
+- Trigger: mọi `pull_request` + push `main`, `develop`. `concurrency` theo ref, huỷ lần chạy cũ.
+- Job `build-test` (`timeout-minutes: 15`): Node 22 + cache npm → `npm ci` → `npm run test:unit -- --run` →
+  `npm run build` với `VITE_KONG_API_URL=https://api.example.com/api` (chỉ để bundle hợp lệ; URL thật nằm ở Pages).
+- Không có bước lint (repo không có script `lint`). Workflow không deploy và không cần secret.
+- `build-test` là required status check cho `develop` và `main` (branch protection, bước 6 runbook dưới).
+- Kiểm tĩnh: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -no-color .github/workflows/ci.yml`.
+
+## CD frontend: Cloudflare Pages — runbook (user làm trên dashboard)
+
+Claude không làm được các bước này (cần tài khoản Cloudflare/GitHub của user) và không đặt secret nào.
+
+1. dash.cloudflare.com → **Workers & Pages** → **Create** → tab **Pages** → **Connect to Git** → chọn GitHub,
+   cấp quyền cho riêng repo `booking_ticket_vue` (không cấp all repositories). Nếu app đã cài từ trước, dashboard
+   dùng lại mà không hỏi → kiểm GitHub → Settings → Applications → **Cloudflare Workers and Pages** → Configure →
+   *Only select repositories* = `booking_ticket_vue`.
+2. **Production branch:** `main`. **Preview:** bật cho mọi branch (mỗi PR có URL `https://<hash>.<project>.pages.dev`).
+3. **Build settings:** framework preset `Vue` (hoặc None), build command `npm run build`, output directory `dist`,
+   root directory để trống.
+4. **Environment variables** (đặt cho cả *Production* và *Preview*):
+   - `NODE_VERSION` = `22`
+   - `VITE_KONG_API_URL` = `https://api.example.com/api` — **giá trị giữ chỗ** (6.2, D1): trang deploy được nhưng mọi
+     lệnh gọi API lỗi tới khi task 6.4 đổi thành `https://api.<domain>/api` và bấm **Retry deployment**.
+   Biến `VITE_*` được nhúng vào bundle lúc build → đổi giá trị phải build lại, và không bao giờ đặt secret vào đây.
+5. **Save and Deploy.** Không thêm `_redirects` (`/* /index.html 200` bị Pages coi là vòng lặp); SPA history mode
+   chạy vì `dist/` không có `404.html` nên Pages tự trả `index.html`.
+6. **Branch protection** — GitHub → `booking_ticket_vue` → Settings → **Rules → Rulesets** → New branch ruleset,
+   target `develop` và `main`, *Enforcement* = Active:
+   - **Bypass list để trống** (kể cả admin/owner — mặc định classic rule cho admin bypass, khi đó check đỏ vẫn
+     merge được). Nếu dùng classic Branches → Add rule thì tick *Do not allow bypassing the above settings*.
+   - *Restrict deletions* và *Block force pushes*: bật.
+   - *Require a pull request before merging*.
+   - *Require status checks to pass* → thêm `build-test`, nguồn **GitHub Actions** (check chỉ hiện sau khi
+     workflow đã chạy ít nhất 1 lần trên GitHub).
+7. Kiểm (DoD 6.2): PR vào `develop` hiện check `build-test` xanh + check preview của Pages; 1 PR nháp cố ý fail
+   1 test → check đỏ, nút merge bị chặn **và không có ô "bypass"/"merge without waiting"** → đóng PR, xoá branch
+   nháp. Khi có người cộng tác thứ hai: thêm `.github/CODEOWNERS` (`/.github/ @<owner>`) + *Require review from
+   Code Owners* để PR không tự sửa `ci.yml` cho qua check.
+
+Để 6.4: custom domain `<domain>` cho project Pages, `VITE_KONG_API_URL` thật, Kong plugin `cors` cho origin
+`https://<domain>` (+ `https://*.<project>.pages.dev` nếu preview cần gọi API).
 
 ## ⚠ Lỗi đã xác nhận (2026-09-28, `docker compose config` v2.29.7, chưa sửa)
 

@@ -48,6 +48,13 @@ Plan task:
 | 4.5 | RegisterPage fields | `customer-register.md` | 0.5 | `backend-implement-api`, `backend-database-change` | — |
 | 4.6 | ADMIN notification: cancelled seat re-booked (Firebase) | **none** → run `/clear-spec` first | 0.8, 2.2 | `backend-implement-api`, `backend-database-change`, `frontend-api-pinia-store` | Firebase project/credentials |
 | 5.1 | Hardening: B18 rest, B37 c, B35 c/e/f/g, B37 e (plan Phase 5) | — (no screen; DoD in plan) | 2.2, 2.3, 2.4 | `backend-implement-api`, `frontend-api-pinia-store` | API time zone (plan §3) |
+| 6.1 | Production compose with `include:` (H1, H6, H7) | `plan-create-produc-cicd.md` phase 1 | — | — | VM RAM budget (plan §3) |
+| 6.2 | CI/CD frontend only (H9): GitHub Actions + Cloudflare Pages | `plan-create-produc-cicd.md` phase 3 | — | — | — |
+| 6.2b | CI backend (H4), after the VM exists | `plan-create-produc-cicd.md` phase 2 | 6.4 | — | — |
+| 6.3 | Build & push ARM64 image, SHA tag (H2, H3) | `plan-create-produc-cicd.md` phase 4 | 6.2b | — | — |
+| 6.4 | VM1 + domain + TLS + backup runbook/scripts (H8; user runs on VM) | `plan-create-produc-cicd.md` phase 5 | 6.1 | — | domain (plan §3) |
+| 6.5 | CD `deploy.sh` + rollback workflow (H5) | `plan-create-produc-cicd.md` phase 6 | 6.1, 6.3, 6.4 | — | — |
+| 6.6 | Observability minimum | `plan-create-produc-cicd.md` phase 7 | 6.5 | — | — |
 
 ## Claude Instructions
 
