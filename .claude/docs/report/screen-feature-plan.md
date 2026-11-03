@@ -8,6 +8,7 @@ file này chỉ là mục lục.
 |---|---|---|---|---|
 | 0.1 | Dùng 1 base URL `VITE_KONG_API_URL` → Kong `:8000/api`; bỏ `bookingClient` | 2026-09-28 | round 1, CLEAN | [0.1-kong-base-url.md](0.1-kong-base-url.md) |
 | 0.2 | Đồng bộ `API_ENDPOINTS` với path BE đã có (B2) | 2026-09-28 | round 1, CLEAN | [0.2-api-endpoints.md](0.2-api-endpoints.md) |
+| 0.3 | Thêm Flyway + baseline V1 | 2026-11-02 | round 3, CLEAN | [0.3-flyway-baseline.md](0.3-flyway-baseline.md) |
 | 0.4 | Khoá endpoint public (B8) | 2026-09-22 | round 2, CLEAN | [0.4-lock-public-endpoints.md](0.4-lock-public-endpoints.md) |
 | 0.5 | Chặn tự đăng ký ADMIN (B11) + gắn `@RoleRequired` (B12) | 2026-09-23 | round 2, CLEAN | [0.5-register-role-required.md](0.5-register-role-required.md) |
 | 0.6 | `GET /api/auth/me` | 2026-09-23 | round 5, CLEAN | [0.6-auth-me.md](0.6-auth-me.md) |

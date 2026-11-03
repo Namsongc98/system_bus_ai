@@ -12,9 +12,9 @@ Schema do **Flyway** trong `manage-revenue-ticket` sở hữu; Hibernate ở c�
 | File | Nội dung |
 |---|---|
 | `Infrastructure/mysql/docker-compose.yml` | 1 service `mysql`, image `mysql:8.0`, container `mysql-ticket-system` |
-| `manage-revenue-ticket/src/main/resources/db/migration/V1__baseline.sql`, `V2__tickets_unique_active_seat.sql` | migration Flyway |
+| `manage-revenue-ticket/src/main/resources/db/migration/V1__baseline.sql` … `V4__trips_search_indexes.sql` | migration Flyway |
 | `<module>/src/main/resources/application.properties` | `spring.datasource.url=${DB_URL…}`, `spring.jpa.hibernate.ddl-auto=${JPA_DDL_AUTO:validate}` |
-| `application-prod.properties` (revenue) | `spring.flyway.baseline-on-migrate=true`, `baseline-version=1` |
+| `application.properties` (revenue, mọi profile) | `spring.flyway.baseline-on-migrate=true`, `baseline-version=1`, `clean-disabled=true` — DB cũ chưa có `flyway_schema_history` được đánh dấu V1, giữ dữ liệu, chỉ chạy V2+ (0.3) |
 
 ## Cấu hình chính
 

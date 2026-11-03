@@ -67,7 +67,7 @@ Secret đọc từ `.env` — chỉ tên biến: `.claude/references/backend/env
 |---|---|---|
 | `spring.jpa.hibernate.ddl-auto` | `${JPA_DDL_AUTO:validate}` | `validate` |
 | `spring.jpa.show-sql` | — | `false` |
-| `spring.flyway.baseline-on-migrate` (revenue) | — | `true`, `baseline-version=1` |
+| `spring.flyway.baseline-on-migrate` (revenue) | `true`, `baseline-version=1`, `clean-disabled=true` | như mặc định (prod không khai báo lại) |
 | Actuator | `health,info,metrics`; `show-details=when_authorized`; `roles=ADMIN`; probes bật | như mặc định (áp mọi profile) |
 
 ## Chạy & kiểm tra
