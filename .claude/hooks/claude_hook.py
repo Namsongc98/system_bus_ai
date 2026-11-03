@@ -3,7 +3,12 @@
 
 This script is intentionally conservative:
 - destructive commands are blocked;
-- dotenv reads and secret-environment disclosure are blocked;
+- dotenv reads (also via globs) and secret-environment disclosure are blocked;
+- Bash may not change the guard itself or secret files (.claude/hooks/**,
+  .claude/settings*.json, .env*) — edit those with the Edit tool, which prompts;
+- read-only subagents (reviewers, finding-verifier, Explore, Plan; detected by
+  the payload's agent_type) get an allowlist: read-only git, grep/find/cat/
+  sed -n, `mvn ... test`, `npm run test:unit`; anything else is blocked;
 - ambiguous cases produce warnings without editing files;
 - dry-run flags make the policy testable outside Claude Code runtime.
 """
@@ -78,6 +83,54 @@ SENSITIVE_ENV_REFERENCE_RE = re.compile(
     r"\b(?:JWT_|DB_|MAIL_|MINIO_)[A-Z0-9_]*\s*="
     r")"
 )
+
+# Globs such as `.env*`, `.e*` or `.en?` would expand to dotenv files at run time.
+DOTENV_GLOB_RE = re.compile(r"(?:^|[\s'\"=:/])\.e(?:n|nv)?[*?\[]")
+# Environment readers the plain `env`/`printenv` rule does not see.
+ENV_READ_RE = re.compile(
+    r"(?:/proc/[^\s/]+/environ|"
+    r"(?:^|[;&|(]\s*)set\s*(?:$|[;&|)])|"
+    r"\b(?:python3?|node|ruby|perl)\b[^\n]*\s-(?:c|e)\b[^\n]*"
+    r"(?:os\.environ|getenv|process\.env|ENV\[|%ENV))"
+)
+# Files that hold the guard itself or secrets: Bash may read the guard, never change it.
+PROTECTED_PATH_RE = re.compile(
+    r"(?:^|/)\.claude/hooks(?:/|$)|(?:^|/)\.claude/settings(?:\.local)?\.json$|(?:^|/)\.env(?:\.[^/]*)?$"
+)
+WRITE_COMMANDS = {
+    "tee", "cp", "mv", "rm", "truncate", "ln", "install", "rsync", "dd",
+    "chmod", "chown", "touch", "unlink", "rmdir", "mkdir",
+}
+IN_PLACE_EDITORS = {"sed", "gsed", "perl"}
+GIT_OVERWRITE_SUBCOMMANDS = {"checkout", "restore", "rm", "mv", "apply", "stash", "reset"}
+REDIRECT_OPERATORS = {">", ">>", ">|", "&>", "&>>", ">&", "&>|"}
+SEPARATORS = {";", "&&", "||", "|", "&", "|&", ";;"}
+INTERPRETERS = {"python", "python3", "node", "ruby", "perl"}
+PROTECTED_CODE_RE = re.compile(r"\.claude/hooks|\.claude/settings|\.env\b")
+INTERPRETER_WRITE_RE = re.compile(r"open\(|write|unlink|rename|replace|rmtree|remove\(|writeFile|appendFile|rmSync")
+HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+# Subagents that must not change anything. Plugin copies use the `system-bus-dev:` prefix.
+READ_ONLY_AGENT_TYPES = {
+    "backend-reviewer", "frontend-reviewer", "security-reviewer", "test-gap-reviewer",
+    "config-reviewer", "finding-verifier", "Explore", "Plan",
+}
+READ_ONLY_COMMANDS = {
+    "cd", "pwd", "ls", "cat", "head", "tail", "wc", "grep", "egrep", "fgrep", "rg",
+    "sort", "uniq", "cut", "tr", "diff", "cmp", "file", "stat", "echo", "printf",
+    "true", "basename", "dirname", "realpath", "which", "tree", "jq", "nl", "comm", "column",
+}
+READ_ONLY_GIT_SUBCOMMANDS = {
+    "status", "diff", "log", "show", "rev-parse", "ls-files", "grep", "blame",
+    "merge-base", "cat-file", "describe", "shortlog",
+}
+FIND_WRITE_FLAGS = {"-exec", "-execdir", "-ok", "-okdir", "-delete", "-fprint", "-fprint0", "-fprintf", "-fls"}
+MVN_FORBIDDEN_GOAL_RE = re.compile(r"^(?:clean|install|deploy|package|verify|site|release:.*|spring-boot:.*|exec:.*|flyway:.*|dependency:.*)$")
+READ_ONLY_PYTHON_SCRIPTS = {
+    ".claude/hooks/claude_hook.py",
+    ".claude/hooks/test_claude_hook.py",
+    ".claude/skills/review-pipeline/scripts/scan_workspace.py",
+}
 
 REDIS_RUNTIME_RE = re.compile(r"Infrastructure/redis-cluster/data")
 REDIRECT_RE = re.compile(r"(?:^|\s)(?:>|>>)\s*(?P<path>/[^\s;&|]+)")
@@ -209,13 +262,214 @@ def blocked_command_reasons(command: str, root: Path) -> list[str]:
         target = Path(match.group("path")).resolve()
         if not is_allowed_write_path(target, root):
             reasons.append(f"redirect_outside_workspace:{target}")
-    if DOTENV_PATH_RE.search(command):
+    if DOTENV_PATH_RE.search(command) or DOTENV_GLOB_RE.search(command):
         reasons.append("dotenv_file_access")
-    if ENV_DUMP_RE.search(command):
+    if ENV_DUMP_RE.search(command) or ENV_READ_RE.search(command):
         reasons.append("environment_dump")
     if SENSITIVE_ENV_REFERENCE_RE.search(command):
         reasons.append("sensitive_environment_reference")
+    reasons.extend(protected_path_write_reasons(command, root))
     return sorted(set(reasons))
+
+
+def strip_heredoc_bodies(command: str) -> str:
+    """Drop heredoc bodies: they are data written by the command, not commands."""
+    lines = command.split("\n")
+    kept: list[str] = []
+    delimiter: str | None = None
+    for line in lines:
+        if delimiter is not None:
+            if line.strip() == delimiter:
+                delimiter = None
+            continue
+        kept.append(line)
+        match = HEREDOC_RE.search(line)
+        if match:
+            delimiter = match.group(2)
+    return "\n".join(kept)
+
+
+def command_segments(command: str) -> list[list[str]] | None:
+    """Split a shell command into simple commands; None when it cannot be parsed."""
+    text = strip_heredoc_bodies(command).replace("\\\n", " ")
+    segments: list[list[str]] = []
+    for line in text.split("\n"):
+        lexer = shlex.shlex(line, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        try:
+            tokens = list(lexer)
+        except ValueError:
+            return None
+        current: list[str] = []
+        for token in tokens:
+            if token in SEPARATORS:
+                if current:
+                    segments.append(current)
+                current = []
+            else:
+                current.append(token)
+        if current:
+            segments.append(current)
+    return segments
+
+
+def redirect_targets(tokens: list[str]) -> list[str]:
+    targets = []
+    for index, token in enumerate(tokens):
+        if token in REDIRECT_OPERATORS and index + 1 < len(tokens):
+            target = tokens[index + 1]
+            if token == ">&" and target.isdigit():
+                continue
+            targets.append(target)
+    return targets
+
+
+def is_protected_path(token: str, root: Path) -> bool:
+    value = token.split("=", 1)[1] if token.startswith("--") and "=" in token else token
+    if PROTECTED_PATH_RE.search(value):
+        return True
+    if not value or value.startswith("-"):
+        return False
+    try:
+        resolved = (Path.cwd() / value).resolve()
+        relative = resolved.relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+    return bool(PROTECTED_PATH_RE.search(relative.as_posix()))
+
+
+def command_word(tokens: list[str]) -> tuple[str, list[str]]:
+    """First word after `VAR=value` prefixes, and the arguments after it."""
+    index = 0
+    while index < len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[index]):
+        index += 1
+    if index >= len(tokens):
+        return "", []
+    return tokens[index].rsplit("/", 1)[-1], tokens[index + 1 :]
+
+
+def protected_path_write_reasons(command: str, root: Path) -> list[str]:
+    segments = command_segments(command)
+    if segments is None:
+        has_protected = any(is_protected_path(word, root) for word in re.split(r"[\s'\"]+", command))
+        has_write = re.search(r">|\btee\b|-i\b|--in-place|\b(?:cp|mv|rm|truncate|ln)\b|--output", command)
+        return ["protected_path_write"] if has_protected and has_write else []
+    for tokens in segments:
+        if any(is_protected_path(target, root) for target in redirect_targets(tokens)):
+            return ["protected_path_write"]
+        word, args = command_word(tokens)
+        operands = [arg for arg in args if arg not in REDIRECT_OPERATORS]
+        if word in WRITE_COMMANDS and any(is_protected_path(arg, root) for arg in operands):
+            return ["protected_path_write"]
+        if word in IN_PLACE_EDITORS and any(arg.startswith(("-i", "--in-place")) for arg in args):
+            if any(is_protected_path(arg, root) for arg in operands):
+                return ["protected_path_write"]
+        if word == "git":
+            if any(arg.startswith("--output") and is_protected_path(arg, root) for arg in args):
+                return ["protected_path_write"]
+            subcommand = git_subcommand(args)
+            if subcommand in GIT_OVERWRITE_SUBCOMMANDS and any(is_protected_path(arg, root) for arg in args):
+                return ["protected_path_write"]
+        if word in INTERPRETERS and {"-c", "-e"}.intersection(args):
+            code = " ".join(args)
+            if PROTECTED_CODE_RE.search(code) and INTERPRETER_WRITE_RE.search(code):
+                return ["protected_path_write"]
+    return []
+
+
+def git_subcommand(args: list[str]) -> str:
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in {"-C", "-c", "--git-dir", "--work-tree"}:
+            index += 2
+            continue
+        if arg.startswith("-"):
+            index += 1
+            continue
+        return arg
+    return ""
+
+
+def read_only_git_form(subcommand: str, rest: list[str]) -> bool:
+    """Listing forms of git subcommands that can also write (stash, branch, remote, worktree)."""
+    if subcommand == "stash":
+        return bool(rest) and rest[0] in {"list", "show"}
+    if subcommand == "branch":
+        return all(arg in {"--show-current", "--list", "-a", "-r", "-v", "-vv", "--all", "--remotes"} for arg in rest)
+    if subcommand == "remote":
+        return rest in ([], ["-v"]) or (bool(rest) and rest[0] == "get-url")
+    if subcommand == "worktree":
+        return rest[:1] == ["list"]
+    return False
+
+
+def agent_type_of(payload: dict[str, Any], override: str | None) -> str:
+    """Subagent type from the hook payload ('' for the main session)."""
+    value = override if override is not None else payload.get("agent_type") or payload.get("subagent_type") or ""
+    return str(value).rsplit(":", 1)[-1]
+
+
+def read_only_agent_reasons(command: str, root: Path) -> list[str]:
+    """Allowlist for read-only subagents: anything not clearly read-only is blocked."""
+    if "$(" in command or "`" in command or "<(" in command or ">(" in command:
+        return ["read_only_agent_command_substitution"]
+    if HEREDOC_RE.search(command):
+        return ["read_only_agent_heredoc"]
+    segments = command_segments(command)
+    if segments is None:
+        return ["read_only_agent_unparseable_command"]
+    reasons: list[str] = []
+    for tokens in segments:
+        if any(token in {"(", ")"} for token in tokens):
+            reasons.append("read_only_agent_subshell")
+            continue
+        for target in redirect_targets(tokens):
+            if target != "/dev/null":
+                reasons.append(f"read_only_agent_write:{target}")
+        word, args = command_word(tokens)
+        if len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[0]):
+            reasons.append("read_only_agent_env_assignment")
+        reason = read_only_command_reason(word, args, root)
+        if reason:
+            reasons.append(reason)
+    return reasons
+
+
+def read_only_command_reason(word: str, args: list[str], root: Path) -> str:
+    if word in READ_ONLY_COMMANDS:
+        return ""
+    if word in {"sed", "gsed"}:
+        if any(arg.startswith(("-i", "--in-place")) for arg in args):
+            return "read_only_agent_in_place_edit"
+        return ""
+    if word == "find":
+        flags = FIND_WRITE_FLAGS.intersection(args)
+        return f"read_only_agent_find_action:{sorted(flags)[0]}" if flags else ""
+    if word == "git":
+        subcommand = git_subcommand(args)
+        rest = args[args.index(subcommand) + 1 :] if subcommand in args else []
+        if subcommand not in READ_ONLY_GIT_SUBCOMMANDS and not read_only_git_form(subcommand, rest):
+            return f"read_only_agent_git_write:{subcommand or 'none'}"
+        if any(arg.startswith("--output") for arg in args):
+            return "read_only_agent_git_output_file"
+        return ""
+    if word == "mvn":
+        goals = [arg for arg in args if not arg.startswith("-") and not arg.endswith(".xml") and "/" not in arg and "," not in arg]
+        if "test" not in goals or any(MVN_FORBIDDEN_GOAL_RE.match(goal) for goal in goals):
+            return "read_only_agent_mvn_goal"
+        return ""
+    if word == "npm":
+        if "run" in args and "test:unit" in args and not {"install", "ci", "exec", "publish"}.intersection(args):
+            return ""
+        return "read_only_agent_npm_command"
+    if word in {"python", "python3"}:
+        script = next((arg for arg in args if not arg.startswith("-")), "")
+        if script in READ_ONLY_PYTHON_SCRIPTS or args[:2] == ["-m", "unittest"]:
+            return ""
+        return "read_only_agent_python"
+    return f"read_only_agent_command_not_allowed:{word or 'empty'}"
 
 
 def worktree_remove_path(command: str) -> str:
@@ -380,6 +634,8 @@ def handle_pre_tool_use(args: argparse.Namespace, payload: dict[str, Any], root:
         emit("warn", "No Bash command found in hook payload; policy could not inspect it.")
         return 0
     reasons = blocked_command_reasons(command, root)
+    if agent_type_of(payload, args.dry_run_agent_type) in READ_ONLY_AGENT_TYPES:
+        reasons = sorted(set(reasons + read_only_agent_reasons(command, root)))
     if reasons:
         emit("block", "Blocked dangerous or out-of-scope Bash command.", {"reasons": reasons})
         return 2
@@ -503,6 +759,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", required=True)
     parser.add_argument("--dry-run-command")
+    parser.add_argument("--dry-run-agent-type", help="Simulate a PreToolUse call from this subagent type.")
     parser.add_argument("--dry-run-prompt")
     parser.add_argument("--dry-run-reason")
     parser.add_argument("--dry-run-status")

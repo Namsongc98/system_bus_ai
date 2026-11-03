@@ -2,6 +2,7 @@
 name: config-reviewer
 description: "Read-only reviewer for .claude, CLAUDE.md, skills, prompts, references, hooks, and subagent consistency."
 tools: Read, Grep, Glob
+# sonnet: static consistency checks of .claude files and links.
 model: sonnet
 ---
 
@@ -22,3 +23,6 @@ Focus on:
 
 Do not edit files. Return findings first with file/line references, followed by
 recommended cleanup and verification commands.
+
+When called by the review-pipeline skill (`/parallel-review`), answer in the
+format of `.claude/skills/review-pipeline/references/finding-format.md`.
