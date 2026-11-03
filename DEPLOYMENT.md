@@ -74,7 +74,7 @@ Workflow: `ticket-system/.github/workflows/ci-cd.yml` — build/test Maven → b
 
 Secrets cần tạo trong GitHub repo `ticket-system`: `VM1_HOST`, `VM1_USER`, `VM1_SSH_KEY`.
 
-Frontend (`booking_ticket_vue`): dùng Vercel Git integration trực tiếp (connect repo trong Vercel dashboard), không cần workflow riêng — Vercel tự build/deploy khi push, đơn giản hơn tự viết pipeline. Set duy nhất `VITE_KONG_API_URL` trỏ về domain Kong/TLS proxy production (`https://your-domain.com/api`) trong Vercel Environment Variables. FE chỉ có một client, Kong tự định tuyến `/api/booking` tới Booking Service và `/api/*` tới Manage Revenue Service.
+Frontend (`booking_ticket_vue`): CD bằng Cloudflare Pages Git integration (đổi từ Vercel 2026-10-28); CI riêng ở `booking_ticket_vue/.github/workflows/ci.yml` (test + build mỗi PR, required check `build-test`). Runbook nối Pages, biến `NODE_VERSION=22` + `VITE_KONG_API_URL` (giữ chỗ tới khi có domain API, task 6.4) và branch protection: `.claude/references/infrastructure/production-cicd.md`. FE chỉ có một client, Kong tự định tuyến `/api/booking` tới Booking Service và `/api/*` tới Manage Revenue Service.
 
 ## 4. VM2 — K8s sandbox
 

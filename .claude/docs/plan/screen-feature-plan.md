@@ -73,7 +73,11 @@ graph LR
     MyTickets --> Reports[Phase3 Dashboard + Revenue]
     Reports --> Secondary[Phase4 Profile + TicketsAdmin + Loyalty]
     MyTickets --> Hardening[Phase5 Hardening]
+    Foundation --> Prod[Phase6 Production + CI/CD]
 ```
+
+Phase 6 không phụ thuộc màn hình nào: chạy song song với Phase 2–5 (deploy
+liên tục từng phần đã xong).
 
 Lý do admin trước khách: khách không tìm được chuyến nếu chưa có xe, tuyến,
 tài xế, chuyến trong DB. Làm admin trước = có công cụ tạo dữ liệu test thật
@@ -290,6 +294,36 @@ Endpoint trong `src/constants/`, service → store `notification` → component.
 
 ---
 
+## Phase 6 — Production + CI/CD (song song Phase 2–5)
+
+Thiết kế chi tiết, hiện trạng lỗi H1–H9, trade-off, debug production:
+`.claude/docs/plan/plan-create-produc-cicd.md` (phase 1–7 trong file đó ↔ task
+6.1–6.6 dưới đây). Mô hình: VM1 Oracle Always Free (ARM64, ~6GB) chạy BE + hạ
+tầng bằng Docker Compose, FE trên Cloudflare Pages (đổi từ Vercel 2026-10-28), image trên GHCR.
+
+Quy ước riêng cho Phase 6:
+- `plan-task` được sửa `ticket-system/Infrastructure/`, `ticket-system/.github/workflows/`,
+  `booking_ticket_vue/.github/workflows/` cho các task này.
+- Việc trên VM, GitHub settings (Environment, branch protection, secrets), Cloudflare Pages,
+  domain do **user** làm theo runbook Claude viết. Claude không đọc/ghi `.env`, không
+  đưa secret vào repo hay log workflow.
+
+| ID | Task | Tầng | Size | DoD |
+|---|---|---|---|---|
+| 6.1 | Compose production chạy đúng trên 1 máy (H1, H6, H7) | Infra | M | `Infrastructure/docker-compose.prod.yml` gốc dùng `include:` (mysql, kafka, redis-cluster, kong, minio, app, tls) thay `docker-compose.prod.override.yml` (xoá file cũ sau khi file mới chạy, giữ `mem_limit`/heap). App: `image: ghcr.io/<owner>/ticket-system-<module>:${IMAGE_TAG:-latest}`, healthcheck `/actuator/health/readiness`, `stop_grace_period: 40s` + `server.shutdown=graceful`, `depends_on: condition: service_healthy`. Mọi service: log `json-file` 10m×3, `restart: unless-stopped`; port nội bộ (3306, 9092–9094, 7001–7006, 8001, MinIO) bind `127.0.0.1`, chỉ NGINX publish 80/443; tổng `mem_limit` ≤ RAM VM (câu hỏi mục 3). Object storage (`Infrastructure/minio/`): **đã làm 2026-10-07, chưa commit** — (1) script init tách ra `minio/init.sh` (`set -eu`, kiểm đầu vào trước: key app ≠ root, secret ≥ 8 ký tự; bước lỗi → exit ≠ 0; trước: `… \|\| true` nuốt mọi lỗi); (2) user app chỉ có policy `app-<bucket>` (List/Get/Put/Delete trên đúng bucket), gỡ `readwrite` cũ; (3) `minio.url` mặc định `localhost:9010` (9000 là kafka-ui); (4) image: `minio/minio` + `minio/mc` đã bị gỡ khỏi Docker Hub và quay.io → **user chọn `pgsty/minio:RELEASE.2026-08-04T00-00-00Z` + `pgsty/mc:RELEASE.2026-09-16T00-00-00Z`** (bản build lại của bên thứ ba, Pigsty; có `linux/arm64`, kiểm 2026-10-13). Đã chạy local 2026-10-07: `minio` healthy, `minio-init` exit 0, tạo bucket + policy `app-user-avatars` + gắn cho user app. **Còn phải làm trong 6.1:** pin digest trong `.env` prod (`MINIO_IMAGE=pgsty/minio@sha256:b6bfe723…2372`, `MINIO_MC_IMAGE=pgsty/mc@sha256:cfc83108…34dd` — lấy đủ bằng `docker buildx imagetools inspect`); kiểm init chạy lần 2 vẫn exit 0, sai root password → exit ≠ 0; user app ghi/đọc/xoá được trong bucket nhưng không tạo được bucket khác và không gọi được admin API. Kiểm: `docker compose -f docker-compose.prod.yml config` sạch; local `up -d --wait` → mọi container `healthy`; gọi 1 API qua Kong `:8000` OK |
+| 6.2 | CI/CD frontend (H9) — **chỉ FE** (user chốt 2026-11-03; BE dời sang 6.2b) | CI | S | FE `booking_ticket_vue/.github/workflows/ci.yml`: `pull_request` + push `main`/`develop`, Node 22 + cache npm, `npm ci` → `npm run test:unit -- --run` → `npm run build` (không có script `lint`). CD bằng Cloudflare Pages Git integration (user nối repo trong dashboard: production branch `main`, preview mỗi PR/branch, build `npm run build`, output `dist`, `NODE_VERSION=22`; `VITE_KONG_API_URL=https://api.example.com/api` giữ chỗ, giá trị thật đặt ở 6.4; không cần file cấu hình SPA — Pages tự fallback `index.html`). User bật branch protection `develop` và `main` bắt buộc check `build-test`. Kiểm: PR FE cố ý fail test → bị chặn merge; PR xanh → merge được và có preview deploy trên Pages |
+| 6.2b | CI backend (H4) — **làm sau khi có VM** (user chốt 2026-11-03: workflow BE gắn liền `build-push`/`deploy-vm1`, chờ VM để làm và kiểm một lần) | CI | S | BE `ci-cd.yml`: trigger `pull_request` (không lọc `paths`, tránh required check chờ mãi) + push `main`/`develop` với `paths` thêm `Infrastructure/**`, `.github/workflows/**`; `setup-java` `cache: maven`; `mvn -B -ntp verify` (Testcontainers — đã kiểm 2026-11-03 chạy được không cần hạ tầng local); upload `surefire-reports` khi fail; `build-push`/`deploy-vm1` chỉ chạy khi push `main`, `packages: write` chỉ ở job `build-push`. Chi tiết: `.claude/docs/review/6.2-ci-cd-frontend.md` mục 4. Kiểm: PR BE cố ý fail test → bị chặn merge |
+| 6.3 | Build & push image ARM64, tag theo SHA (H2, H3) | CI | S | Job build-push chạy trên runner `ubuntu-24.04-arm` (hoặc buildx + QEMU), `platforms: linux/arm64`, tag `${{ github.sha }}` + `latest`, cache `type=gha`; chỉ chạy khi push `main`, PR không push image. Kiểm: `docker manifest inspect ghcr.io/<owner>/ticket-system-booking_ticket:<sha>` có `arm64` |
+| 6.4 | Chuẩn bị VM1 + domain + TLS + backup (H8) | Infra (tay trên VM) | M | Claude viết runbook + script; user chạy trên VM: user `deploy` SSH key-only (tắt password/root); Docker + Compose ≥ 2.20; Security List **và** iptables chỉ mở 22/80/443; swap 2GB; `.env` quyền 600 tạo tay; `docker login ghcr.io` (PAT `read:packages`); certbot + cron renew; `tls/nginx.conf` đổi `your-domain.com` → `api.<domain>`; Kong plugin `cors` cho origin SPA (khớp 5.1 b); Cloudflare Pages (project + `NODE_VERSION` đã có từ 6.2): đổi `VITE_KONG_API_URL` từ giá trị giữ chỗ sang `https://api.<domain>/api` rồi Retry deployment, gắn custom domain `<domain>`; Preview không dùng URL API thật kèm CORS wildcard `*.pages.dev`; Redis cluster init; cron `mysqldump --single-transaction` hằng ngày → Object Storage, giữ 7–14 bản. Kiểm: `https://api.<domain>/api/booking/actuator/health` 200 với cert hợp lệ; từ ngoài VM các port 3306/9092/7001/8001 đóng; restore 1 bản backup vào MySQL tạm thành công |
+| 6.5 | CD: deploy có kiểm chứng + rollback (H5) | CI + Infra | M | `Infrastructure/deploy.sh <sha>`: lưu `.previous_sha` → `IMAGE_TAG=<sha> docker compose pull` → `up -d --wait --wait-timeout 180` (app services) → smoke test qua Kong (health + 1 GET public) → fail thì quay về SHA cũ + exit 1, xong thì ghi `.current_sha` + `docker image prune --filter until=168h`. Workflow chỉ SSH gọi script; `concurrency: deploy-prod` (không cancel), `environment: production` + required reviewer, `workflow_dispatch` input `sha` để rollback. Migration Flyway từ đây theo expand/contract (rollback image không rollback schema). Kiểm: deploy SHA tốt → job xanh; SHA cố ý hỏng health → job đỏ và VM vẫn chạy SHA cũ; rollback qua `workflow_dispatch` OK |
+| 6.6 | Observability tối thiểu | BE + Infra | S | `/actuator/prometheus` chỉ nội bộ (không route qua Kong public); uptime check ngoài VM gọi health mỗi 1–5 phút → báo khi down; cron cảnh báo đĩa > 80%; `X-Request-ID` từ Kong có trong log pattern cả 2 service (nếu 2.2 chưa làm). Kiểm: tắt 1 app → nhận cảnh báo ≤ 5 phút; log 1 request có requestId khớp header; `/actuator/prometheus` qua domain public → 404/403 |
+
+Thứ tự: 6.1, 6.2 (FE) làm ngay được; 6.4 cần chốt domain; 6.2b (CI BE) sau 6.4
+(user chốt 2026-11-03); 6.3 sau 6.2b vì cùng file workflow BE; 6.5 cần 6.1 + 6.3 +
+6.4; 6.6 sau 6.5.
+
+---
+
 ## 2. Trade-off
 
 **(a) Tại sao async (Kafka + Redis hold) cho booking thay vì `POST /api/ticket` đồng bộ.**
@@ -332,4 +366,8 @@ sau — unique constraint và seat map API vẫn dùng lại được y nguyên.
 | Múi giờ của API: `LocalDateTime` không offset hiện được hiểu theo giờ JVM; chốt `Asia/Ho_Chi_Minh` và từ chối giờ có offset? (B35 c) | 5.1 |
 | Loyalty: bao nhiêu vé = 1 điểm, dùng điểm đổi gì? | Phase 4 |
 | Firebase project + service account; có lưu lịch sử thông báo không; ADMIN offline thì xử lý thế nào; có ghi kết quả cuộc gọi không? | 4.6 |
-| ~~Dev chạy BE thế nào để đi qua Kong?~~ **Đã chốt 2026-09-28 (user): cả hai.** Code/debug: BE chạy trong IntelliJ, Kong dùng `Infrastructure/kong/kong.dev.yml` (target `host.docker.internal:8081/8082`): `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate`. Kiểm tích hợp/triển khai: BE chạy bằng `Infrastructure/app/docker-compose.yml`, Kong dùng `kong.yml`: `docker compose up -d --force-recreate`. Không chạy đồng thời 2 kiểu. Actuator (readiness `readinessState,db,redis`) chuyển lên `application.properties` gốc để profile mặc định của IntelliJ cũng có `/actuator/health/readiness` | — |
+| Domain production: mua `.com` qua Cloudflare Registrar (đề xuất) hay `.id.vn` miễn phí? Tên domain? (`api.<domain>` → VM1, `<domain>` → Cloudflare Pages) | 6.4, 6.5 |
+| RAM VM1: tổng `mem_limit` ~5.3/6GB — cắt Redis 6 → 3 node hay giảm heap Kafka? | 6.1 |
+| **Đã chốt 2026-10-07 (user):** dùng `pgsty/minio` + `pgsty/mc` (bản build lại của bên thứ ba, có ARM64), pin digest ở prod. Rủi ro chấp nhận: phụ thuộc bên thứ ba tiếp tục build và vá; BE viết theo API S3 chuẩn để vẫn đổi được sang Garage/SeaweedFS/RustFS | — |
+| Trả file cho browser: stream qua BE (đề xuất, storage không public) hay presigned URL? | tính năng upload |
+| **Đã chốt 2026-09-28 (user): cả hai.** Code/debug: BE chạy trong IntelliJ, Kong dùng `Infrastructure/kong/kong.dev.yml` (target `host.docker.internal:8081/8082`): `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate`. Kiểm tích hợp/triển khai: BE chạy bằng `Infrastructure/app/docker-compose.yml`, Kong dùng `kong.yml`: `docker compose up -d --force-recreate`. Không chạy đồng thời 2 kiểu. Actuator (readiness `readinessState,db,redis`) chuyển lên `application.properties` gốc để profile mặc định của IntelliJ cũng có `/actuator/health/readiness` | — |

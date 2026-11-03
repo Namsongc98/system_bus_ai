@@ -16,7 +16,7 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [x] implement
 - [x] test
 - [x] review
-- [ ] lead-review
+- [x] lead-review
 
 ## 0.3 — Flyway + V1 baseline
 - [x] spec
@@ -159,6 +159,55 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [ ] lead-review
 
 ## 5.1 — Hardening (B18 rest, B37 c, B35 c/e/f/g, B37 e)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.1 — Production compose (H1, H6, H7)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.2 — CI/CD frontend (H9), FE only
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
+
+## 6.2b — CI backend (H4), after VM (6.4)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.3 — Build & push ARM64 image, SHA tag (H2, H3)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.4 — VM1 + domain + TLS + backup (H8)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.5 — CD deploy + rollback (H5)
+- [ ] spec
+- [ ] implement
+- [ ] test
+- [ ] review
+- [ ] lead-review
+
+## 6.6 — Observability
 - [ ] spec
 - [ ] implement
 - [ ] test

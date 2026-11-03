@@ -15,7 +15,7 @@ Khi file này và compose/config thật lệch nhau → tin compose/config, rồ
 | [kong.md](kong.md) | Kong 3.9 DB-less — API Gateway, điểm vào duy nhất của FE | `Infrastructure/kong/` |
 | [app-services.md](app-services.md) | 2 Spring Boot service chạy container, Dockerfile | `Infrastructure/app/`, `<module>/Dockerfile` |
 | [tls-nginx.md](tls-nginx.md) | NGINX TLS termination + certbot (chỉ prod) | `Infrastructure/tls/` |
-| [production-cicd.md](production-cicd.md) | VM prod 6GB, RAM override, CI/CD GHCR, FE Vercel | `docker-compose.prod.override.yml`, `ci-cd.yml`, `DEPLOYMENT.md` |
+| [production-cicd.md](production-cicd.md) | VM prod 6GB, RAM override, CI/CD GHCR, CI FE + Cloudflare Pages | `docker-compose.prod.override.yml`, `ci-cd.yml`, `booking_ticket_vue/.github/workflows/ci.yml`, `DEPLOYMENT.md` |
 | [k8s-sandbox.md](k8s-sandbox.md) | Bài tập k3s trên VM2 | `Infrastructure/k8s-sandbox/` |
 
 Đường dẫn trong các file này tính từ root repo `System_bus/`; `Infrastructure/` = `ticket-system/Infrastructure/`.
