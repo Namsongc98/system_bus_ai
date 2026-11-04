@@ -42,6 +42,7 @@ Plan task:
 | 3.1 | DashboardView | `admin-dashboard.md` | 0.1, 2.2 | `frontend-api-pinia-store` | — |
 | 3.2 | RevenueReports | `admin-revenue-reports.md` | 0.4, 0.5 | `backend-refactor-service`, `frontend-integrate-download-api` | — |
 | 4.1 | ProfileView | **none** → run `/clear-spec` first | 0.6 | — | — |
+| 4.1a | Profile avatar upload/read on MinIO — BE only (FE later with 4.1) | — (BE task; scope from spec-review) | 0.6 | `backend-implement-api`, `backend-write-test` | — |
 | 4.2 | TicketsAdmin | **none** → run `/clear-spec` first | 2.2 | — | — |
 | 4.3 | Loyalty | — | 2.2 | `backend-implement-api` | loyalty rule |
 | 4.4 | Salary | — | — | — | deferred: no screen exists |

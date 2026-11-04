@@ -38,14 +38,16 @@ toàn bộ service dùng `common-library`):
 
 ```
 /api/auth/**
-/avatars/**
-/api/ticket/summary/excel
 /api/ticket/email
 /api/ticket/confirm
 /ticket/confirm-page
+/actuator/health, /actuator/health/**   (Kong health check)
 ```
 
-**Lưu ý bảo mật cần soát lại:** `/api/ticket/summary/excel` (export doanh thu ra Excel) đang nằm
+(Cập nhật 2026-11-03, task 4.1a: bỏ `/avatars/**` — không có handler nào, avatar đọc qua
+`GET /api/profile/avatar` có token. `/api/ticket/summary/excel` đã khoá ở 0.4.)
+
+**Ghi chú lịch sử (đã xử lý ở 0.4):** `/api/ticket/summary/excel` (export doanh thu ra Excel) từng nằm
 trong danh sách public — nghĩa là ai cũng tải được báo cáo doanh thu mà không cần đăng nhập. Đây là
 gap bảo mật, không phải chủ đích thiết kế rõ ràng (không thấy comment giải thích) — nên xác nhận lại
 trước khi lên production.

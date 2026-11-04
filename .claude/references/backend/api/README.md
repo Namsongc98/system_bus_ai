@@ -18,6 +18,7 @@
 | Chọn ghế + checkout | [`seat-selection-checkout/`](./seat-selection-checkout/endpoints.md) | `BookingController` |
 | Thanh toán + xác nhận | [`payment-booking-confirmation/`](./payment-booking-confirmation/endpoints.md) | `TicketController`, `TicketWebController` |
 | Vé của tôi | [`my-tickets/`](./my-tickets/endpoints.md) | `TicketController` *(thiếu API list)* |
+| Avatar hồ sơ (ProfileView, FE ở 4.1) | [`profile-avatar/`](./profile-avatar/endpoints.md) | `ProfileAvatarController` |
 
 ### Nhóm B — Admin Terminal
 | Màn hình | Folder | Controller chính |

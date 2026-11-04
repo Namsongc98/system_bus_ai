@@ -39,6 +39,8 @@ tokens, passwords, or environment-specific secret values.
 | `MINIO_ACCESS_KEY` | MinIO access credential. | None. |
 | `MINIO_SECRET_KEY` | MinIO secret credential. | None. |
 | `MINIO_BUCKET` | Avatar/object bucket name. | `user-avatars` |
+| `MINIO_ROOT_USER` | MinIO admin user — **only in `ticket-system/.env.minio`**, read by `Infrastructure/minio/` only, never by the app (4.1a). | None (required by the MinIO compose). |
+| `MINIO_ROOT_PASSWORD` | MinIO admin password, ≥ 8 chars — **only in `ticket-system/.env.minio`**. | None (required by the MinIO compose). |
 
 ## Claude Boundary
 

@@ -130,6 +130,13 @@ Plan: `.claude/docs/plan/screen-feature-plan.md` · Per unit: `/spec-review <ID>
 - [ ] review
 - [ ] lead-review
 
+## 4.1a — Profile avatar (MinIO), BE only
+- [x] spec
+- [x] implement
+- [x] test
+- [x] review
+- [x] lead-review
+
 ## 4.2 — admin/TicketsAdmin
 - [ ] spec
 - [ ] implement
