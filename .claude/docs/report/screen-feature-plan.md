@@ -17,4 +17,5 @@ file này chỉ là mục lục.
 | 1.1 | BusesRoutes: CRUD xe + tuyến, trạng thái xe `AVAILABLE/IN_USE/MAINTENANCE` (B15) | 2026-09-29 | round 1, CLEAN | [1.1-buses-routes.md](1.1-buses-routes.md) |
 | 1.2 | UserManagement: quản lý user + khoá tài khoản (B6) | 2026-09-29 | round 1, CLEAN | [1.2-user-management.md](1.2-user-management.md) |
 | 1.3 | TripsManagement: quản lý chuyến, state machine, check trùng giờ (B30, B31) + khắc phục rủi ro (B18, B20, B26, B33, B35, B36, B37) | 2026-10-06 | round 5, CLEAN | [1.3-trips-management.md](1.3-trips-management.md) |
+| 4.1a | Avatar hồ sơ (MinIO) — chỉ BE | 2026-11-04 | round 2, CLEAN | [4.1a-profile-avatar.md](4.1a-profile-avatar.md) |
 | 6.2 | CI/CD frontend (H9) — chỉ FE | 2026-11-03 | round 1, CLEAN | [6.2-ci-cd-frontend.md](6.2-ci-cd-frontend.md) |
