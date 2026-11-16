@@ -226,3 +226,25 @@ skills but not commands (e.g. Cowork, per the note already in
 - This does not change the gate semantics: still read-only for code, one task
   ID per run, never ticks `spec` — Claude can now reach those instructions via
   skill-matching, but the human-tick requirement is unchanged either way.
+
+## Harness Dashboard
+
+Status: implemented and reviewed. `review-pipeline` rounds 1–6 (2026-11-08 to
+2026-11-16); round 6 has no high/medium findings, remaining lows accepted by the
+user.
+
+The harness state was spread across the ledger, report index, review docs and
+`_workspace`, so seeing what was waiting for a human meant opening several files.
+
+- Added `.claude/dashboard/`: `collect.py` builds one JSON snapshot from those
+  files, subagent `*.meta.json` and read-only git; `server.py` serves it on
+  loopback; `static/` is plain HTML, CSS and JS with no build step.
+- Read-only by design: no file writes, no ledger ticks, no agent launches.
+  Subagent transcripts are never opened, only `stat`-ed.
+- Redacts with the hook's `secret_findings` plus extra patterns of its own
+  (prefixed names, short values, quoted values, connection strings, Bearer,
+  Basic auth, provider tokens), and refuses to
+  serve data if the scanner cannot be loaded. The hook's patterns are unchanged.
+- `*.meta.json` is an internal Claude Code format. If it changes, cards show
+  "Không rõ" and a warning. No hook feeds the dashboard today; a
+  `SubagentStart`/`SubagentStop` hook could be added later if this proves unstable.
