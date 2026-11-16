@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harness Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="rail" aria-label="Khu vực">
+      <div class="logo" aria-hidden="true">SB</div>
+      <div class="rail-links" id="nav"></div>
+      <div class="rail-foot"><strong>LOCAL</strong><span>READ ONLY</span></div>
+    </nav>
+    <main class="main">
+      <header class="top">
+        <div>
+          <p class="eyebrow">Không gian điều phối</p>
+          <h1>Đội agent đang làm gì?</h1>
+          <p class="mission" id="mission">Đang tải dữ liệu…</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn" id="pause">Tạm dừng cập nhật</button>
+          <button type="button" class="btn btn-primary" id="refresh">↻ Làm mới</button>
+        </div>
+      </header>
+      <div id="alerts"></div>
+      <div id="page"></div>
+    </main>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

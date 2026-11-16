@@ -123,6 +123,7 @@ không bao giờ tự ý.
 **[reference]** kiến thức thụ động, được 1 skill/command/agent đọc khi cần —
 tự nó không làm gì cả.
 **[human gate]** chỉ bạn được cập nhật.
+**[tool]** công cụ bạn tự chạy khi cần, không tham gia luồng làm task.
 
 ### `CLAUDE.md` (gốc repo + 2 subproject) — [reference]
 - `CLAUDE.md` ở gốc: Claude đọc mỗi session. Kiến trúc, bản đồ module, các lệnh,
@@ -303,6 +304,15 @@ Các bản checkout Git worktree thật sự, tạo bởi skill/command `git-wor
 cho các task cần tách biệt. Không phải chỗ bạn tự sửa trực tiếp; dọn dẹp qua
 `/git-worktree`, không bao giờ `rm -rf` (hook đã chặn việc xóa force không
 quản lý rồi).
+
+### `.claude/dashboard/` — [tool]
+Dashboard local xem tiến độ cổng ledger, trạng thái subagent, luồng finding của
+từng vòng review và các cổng đang chờ bạn. Chạy
+`python3 .claude/dashboard/server.py [--port 4317]` rồi mở `http://127.0.0.1:4317`.
+Kiểm dữ liệu không cần trình duyệt: `python3 .claude/dashboard/collect.py --check`.
+Test: `python3 -B -m unittest discover -s .claude/dashboard`. Dashboard không ghi
+file, không tick ledger, không kích hoạt agent. Trong thư mục metadata subagent
+nó chỉ đọc `*.meta.json` và `stat` file `.jsonl`, không mở nội dung transcript.
 
 ### `.claude/CLAUDE_CAPABILITY_ROADMAP.md`
 Tài liệu changelog/lý do sống cho những gì có trong `.claude/` và vì sao.
